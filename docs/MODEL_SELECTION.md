@@ -279,3 +279,19 @@ Every added model must beat a simpler alternative on a named criterion:
 - safety/currentness behavior.
 
 If it cannot, it does not belong in the production motivational stack.
+
+
+## Implemented after initial ranking
+
+The following items previously listed under NEXT HIGH-VALUE are now implemented:
+- Poisson null-model comparison primitives;
+- martingale/compensator residual diagnostics.
+
+Still next:
+- time-rescaling transformed inter-arrival diagnostics;
+- renewal/refractory hazard;
+- ARIMAX when verified exogenous predictors exist;
+- SARIMA when empirical seasonality exists.
+
+
+Time-rescaled compensator intervals are now implemented. The remaining diagnostics frontier is distributional validation of those intervals (for example exponentiality/uniform-transform checks and dependence tests), not interval construction itself.

@@ -1,3 +1,10 @@
+from .diagnostics import (
+    MartingaleResidual,
+    PoissonNullModel,
+    integrated_intensity,
+    martingale_residual,
+    time_rescaled_intervals,
+)
 from .engine import Policy, STATE_SCHEMA, VolitionEngine
 from .models import (
     ChoiceClass,
@@ -31,9 +38,11 @@ __all__ = [
     "DriveKind",
     "Goal",
     "HawkesKernel",
+    "MartingaleResidual",
     "MotiveEvent",
     "MotiveTemporalModel",
     "OrnsteinUhlenbeck",
+    "PoissonNullModel",
     "Policy",
     "ProvenanceClass",
     "STATE_SCHEMA",
@@ -42,4 +51,7 @@ __all__ = [
     "TransitionEvent",
     "VolitionEngine",
     "Want",
+    "integrated_intensity",
+    "martingale_residual",
+    "time_rescaled_intervals",
 ]

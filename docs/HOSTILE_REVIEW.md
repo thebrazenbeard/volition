@@ -103,3 +103,22 @@ PARTIALLY MITIGATED. Combined intensity is non-negative and mapped through `1 - 
 > Brownian/OU state could become hidden pseudo-memory.
 
 GUARD. The diffusion component is exposed separately from the ARIMA baseline and Hawkes excitation. Any future compact persistence format must preserve its class and parameters rather than collapsing it into an unexplained scalar.
+
+
+## Diagnostic hostile additions
+
+> A near-zero martingale residual could be mistaken for proof that the model is correct.
+
+REJECTED. One residual is weak evidence. Calibration requires residual sequences, temporal-structure checks, and preferably held-out comparison.
+
+> Numerical integration could hide error near Hawkes jumps.
+
+MITIGATED. V0.4 uses midpoint quadrature rather than trapezoidal endpoint weighting. Exact analytic or event-adaptive integration remains a future improvement.
+
+> The model could learn from its own residuals and create a self-validating loop.
+
+BLOCKED BY ARCHITECTURE. Diagnostics currently return evaluation objects only. They do not mutate temporal parameters or motivational state. Any future learning path must be separately governed.
+
+> Poisson is too simple to be useful.
+
+REJECTED as a reason to omit it. Its simplicity is the point: Hawkes complexity must beat a no-history baseline rather than being assumed necessary.

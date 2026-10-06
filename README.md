@@ -121,3 +121,15 @@ Raw Brownian motion is available as a stochastic innovation primitive. Ornstein-
 The caller supplies each realized innovation explicitly; Volition does not hide random sampling inside the engine. See `docs/TEMPORAL_DYNAMICS.md` and `docs/MODEL_SELECTION.md`.
 
 Current full regression after this extension: 33 tests passing before exact-head closeout.
+
+
+## V0.4 calibration diagnostics
+
+The package now includes a homogeneous Poisson null model, numerical compensator, and martingale residual diagnostics for event-arrival calibration.
+
+These are evaluation tools only. They cannot directly alter drive scores, Choice classes, Goals, or authority.
+
+See `docs/DIAGNOSTICS.md`.
+
+
+V0.4 also exposes `time_rescaled_intervals(...)`, which maps observed event gaps through integrated model intensity. This is the transformation primitive; distributional goodness-of-fit testing remains separate.

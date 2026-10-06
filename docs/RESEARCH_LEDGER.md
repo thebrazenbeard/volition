@@ -159,3 +159,37 @@ Current diffusion closeout classification:
 - independent review: NOT_PERFORMED;
 - main merge: NOT_PERFORMED;
 - runtime install/consumption: NOT_ESTABLISHED.
+
+
+## 2026-10-06 - Poisson / martingale diagnostics
+
+The next high-value mathematical layer from the model-selection review was implemented as diagnostics rather than as another motive generator.
+
+Added:
+- homogeneous Poisson null model;
+- point-process log likelihood for the null;
+- numerical integrated intensity / compensator;
+- martingale residual `N - Lambda`;
+- target/drive filtering;
+- midpoint quadrature around jump discontinuities.
+
+TDD evidence:
+- diagnostics red: module absent;
+- diagnostics green: 6/6 tests;
+- full regression after implementation: 39/39 tests before closeout.
+
+Claim ceiling:
+- martingale residuals are calibration evidence across repeated windows;
+- one residual does not prove or disprove model correctness;
+- diagnostics do not feed directly into motivation.
+
+
+### Diagnostics continuation
+
+The live branch added a stronger diagnostics contract before closeout:
+- time-rescaled compensator intervals between observed events;
+- an explicit predictable-jump-boundary regression for integrated Hawkes mass.
+
+After implementation, full regression: 41/41 tests.
+
+The time-rescaling function returns transformed intervals only. V0.4 does not yet perform KS, exponentiality, independence, or other distributional goodness-of-fit tests.

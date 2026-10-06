@@ -128,3 +128,12 @@ diffusion_academic_sources:
   - locator: DOI:10.1007/S10959-017-0789-6
     title: Large deviations for cascades of diffusions arising in oscillating systems of interacting Hawkes processes
     role: brownian_driven_diffusion_approximation_with_hawkes_memory
+
+
+diagnostic_academic_sources:
+  - locator: arXiv:1507.02822
+    title: Hawkes Processes
+    role: hawkes_conditional_intensity_and_point_process_background
+  - locator: DOI:10.1137/21M1396927
+    title: Hawkes Processes Modeling, Inference, and Control - An Overview
+    role: hawkes_inference_and_model_evaluation_background
