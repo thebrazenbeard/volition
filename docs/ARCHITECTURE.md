@@ -1,4 +1,4 @@
-# Volition Architecture V2.3
+# Volition Architecture V2.5
 
 ## Purpose
 
@@ -172,7 +172,9 @@ Volition adopts MESO-CRCT's separation among salience, appraisal, tendency, inte
 
 ### Temporal
 
-The temporal model supplies chronology/currentness context. Production elapsed time must come from a trusted clock/currentness layer rather than an arbitrary caller.
+`thebrazenbeard/temporal` supplies chronology only. V0.7 binds Temporal Watch V1 canonical UTC timestamps, stable IDs, source labels, and refs through `TemporalEventBridge`. `TemporalAnchor` converts canonical absolute time to Volition-relative non-negative seconds.
+
+The bridge preserves Temporal's `clock before semantics` rule: event text is not interpreted as target, drive, truth, currentness, memory, consent, or authority. Volition semantics must be supplied explicitly by the caller.
 
 ### effect systems
 

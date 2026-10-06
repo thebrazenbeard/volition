@@ -1,5 +1,5 @@
 schema: VOLITION_SOURCE_REGISTRY_V1
-status: FOUNDATION_V2_4_RESCALING_VALIDATION_IMPLEMENTED_ON_WORK_BRANCH
+status: FOUNDATION_V2_5_TEMPORAL_BRIDGE_IMPLEMENTED_ON_WORK_BRANCH
 subject:
   repository: thebrazenbeard/volition
   work_branch: work/volition-foundation-20261006
@@ -51,7 +51,7 @@ internal_sources:
     role: self_model_representation_boundary
   - repository: thebrazenbeard/temporal
     head: 0fc7071a6b01e609fb2cdc76a32c73276ab27094
-    role: explicit_time_chronology
+    role: canonical_utc_chronology_stable_event_identity_and_elapsed_time
   - repository: thebrazenbeard/project-runner
     head: 04702abbf51aa2920b7d054275619253ea6fa748
     role: bounded_governed_execution

@@ -215,3 +215,8 @@ Diffusion modifies expected temporal pressure only. It does not:
 V2.3 adds an optional age-dependent recurrence term based on time since the last matching target/drive event. It is separately reported as `renewal`, with `renewal_age_seconds` preserving the event age used for the hazard.
 
 The combined model is `ARIMA + optional diffusion + optional renewal age hazard + Hawkes`. Renewal does not replace Hawkes: it models refractory/recovery structure, while Hawkes models event-triggered excitation/inhibition. See `docs/RENEWAL_DYNAMICS.md`.
+
+
+## Temporal Watch clock binding
+
+When a motive event originates from `thebrazenbeard/temporal`, production chronology should enter through `TemporalEventBridge` instead of arbitrary caller-supplied elapsed seconds. The bridge converts canonical UTC timestamps to a non-negative relative axis and preserves stable Temporal provenance on the resulting `MotiveEvent`. See `docs/TEMPORAL_INTEGRATION.md`.

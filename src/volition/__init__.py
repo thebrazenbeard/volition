@@ -21,6 +21,12 @@ from .models import (
     TransitionEvent,
     Want,
 )
+from .temporal_bridge import (
+    TemporalAnchor,
+    TemporalEventBridge,
+    TemporalRecord,
+    canonical_temporal_timestamp,
+)
 from .temporal import (
     ARIMABaseline,
     BrownianMotion,
@@ -33,6 +39,10 @@ from .temporal import (
 )
 
 __all__ = [
+    "canonical_temporal_timestamp",
+    "TemporalRecord",
+    "TemporalEventBridge",
+    "TemporalAnchor",
     "ARIMABaseline",
     "BrownianMotion",
     "ChoiceClass",

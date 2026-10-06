@@ -185,3 +185,25 @@ OPEN / DOCUMENTED. Held-out timing, predictive/prequential checks, and simpler-m
 > Invalid numerical intervals could silently poison the diagnostics.
 
 FAIL-CLOSED. Negative, NaN, and infinite intervals are rejected. Empty input produces no distributional claim.
+
+## Temporal bridge hostile additions
+
+> A timestamped record could be treated as proof that the event proposition is true or current.
+
+BLOCKED SEMANTICALLY. The bridge consumes chronology/provenance fields only. Temporal event text is not mapped to a Volition target, drive, Want, Choice, Goal, or currentness claim.
+
+> The same Temporal event could be ingested twice through separate bridge instances and amplify Hawkes/renewal history.
+
+FIXED. `MotiveTemporalModel` tracks stable Temporal event IDs and rejects duplicate ingestion independent of bridge instance.
+
+> Offset timestamps or noncanonical fractional precision could produce different relative times across implementations.
+
+FAIL-CLOSED. Stored records must match Temporal Watch V1 canonical UTC `Z` representation exactly before conversion.
+
+> Choosing an anchor after an event could silently reorder history by producing negative elapsed time.
+
+FAIL-CLOSED. Events before the Volition anchor are rejected. The bridge never silently reorders or takes absolute values.
+
+> Stable chronology can still be attached to the wrong motive semantics by a caller.
+
+OPEN / AUTHORITY BOUNDARY. The bridge deliberately does not infer semantics. Explicit target/DriveKind mapping remains a separate admission decision and requires its own provenance/qualification.

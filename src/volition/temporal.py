@@ -196,6 +196,10 @@ class MotiveEvent:
     kind: DriveKind
     at_seconds: float
     weight: float = 1.0
+    temporal_event_id: str | None = None
+    temporal_timestamp: str | None = None
+    temporal_source: str | None = None
+    temporal_refs: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -235,6 +239,7 @@ class MotiveTemporalModel:
         self._diffusions: dict[tuple[str, DriveKind], DiffusionProcess] = {}
         self._renewal_hazards: dict[tuple[str, DriveKind], RefractoryRenewalHazard] = {}
         self._events: list[MotiveEvent] = []
+        self._temporal_event_ids: set[str] = set()
         self._validate_subcritical()
 
     @property
@@ -326,18 +331,39 @@ class MotiveTemporalModel:
         *,
         at_seconds: float,
         weight: float = 1.0,
+        temporal_event_id: str | None = None,
+        temporal_timestamp: str | None = None,
+        temporal_source: str | None = None,
+        temporal_refs: tuple[str, ...] = (),
     ) -> MotiveEvent:
         if at_seconds < 0:
             raise ValueError("event time must be non-negative")
         if weight < 0:
             raise ValueError("event weight must be non-negative")
+        if temporal_event_id is not None:
+            if not isinstance(temporal_event_id, str) or not temporal_event_id:
+                raise ValueError("temporal_event_id must be a non-empty string")
+            if temporal_event_id in self._temporal_event_ids:
+                raise ValueError(f"duplicate Temporal event id: {temporal_event_id}")
+            if not isinstance(temporal_timestamp, str) or not temporal_timestamp:
+                raise ValueError("Temporal provenance requires temporal_timestamp")
+            if not isinstance(temporal_source, str) or not temporal_source:
+                raise ValueError("Temporal provenance requires temporal_source")
+            if not all(isinstance(ref, str) and ref for ref in temporal_refs):
+                raise ValueError("temporal_refs must contain non-empty strings")
         event = MotiveEvent(
             target=target,
             kind=kind,
             at_seconds=float(at_seconds),
             weight=float(weight),
+            temporal_event_id=temporal_event_id,
+            temporal_timestamp=temporal_timestamp,
+            temporal_source=temporal_source,
+            temporal_refs=tuple(temporal_refs),
         )
         self._events.append(event)
+        if temporal_event_id is not None:
+            self._temporal_event_ids.add(temporal_event_id)
         return event
 
     def intensity(

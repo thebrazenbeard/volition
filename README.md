@@ -6,7 +6,7 @@ It is built to make reactive models more proactive without collapsing motivation
 
 `SALIENCE != DRIVE != WANT != CHOICE != GOAL != CONSENT != AUTHORITY != ACTION != PHENOMENOLOGY`
 
-## Foundation V2.4
+## Foundation V2.5
 
 The current work branch implements:
 - eight typed motive families: homeostatic, epistemic, competence, empowerment, open-loop, social, self-model, and protection;
@@ -18,6 +18,7 @@ The current work branch implements:
 - bounded ENDOGENOUS cognition requests;
 - `VOLITION_STATE_V2` snapshot/restore with choice provenance;
 - ordered transition receipts;
+- Temporal Watch V1 bridge for canonical UTC chronology, stable event IDs, and event provenance;
 - ARIMA slow-baseline motive forecasts;
 - multivariate Hawkes self-/cross-excitation and inhibition;
 - optional replayable Brownian diffusion and mean-reverting Ornstein-Uhlenbeck diffusion;
@@ -102,6 +103,7 @@ See:
 - `docs/EXTERNAL_RESEARCH.md`
 - `docs/EXTERNAL_PRIOR_ART.md`
 - `docs/TEMPORAL_DYNAMICS.md`
+- `docs/TEMPORAL_INTEGRATION.md`
 - `docs/RENEWAL_DYNAMICS.md`
 - `docs/MODEL_SELECTION.md`
 - `docs/SOURCE_REGISTRY.yaml`
@@ -110,7 +112,7 @@ See:
 
 ## Status
 
-FOUNDATION_V2_4_RESCALING_VALIDATION_IMPLEMENTED_AND_TESTED_ON_WORK_BRANCH
+FOUNDATION_V2_5_TEMPORAL_BRIDGE_IMPLEMENTED_AND_TESTED_ON_WORK_BRANCH
 
 This does not mean merged to `main`, installed into a runtime, behaviorally qualified in a live agent, or independently reviewed.
 
@@ -152,3 +154,10 @@ This recurrence term is separate from Hawkes excitation and from engine-level sa
 Volition now evaluates time-rescaled intervals without issuing a binary model-validity verdict. `evaluate_time_rescaled_intervals(...)` reports interval mean/variance, the Uniform-transform Kolmogorov-Smirnov distance, lag-1 correlation when defined, and transformed Uniform values.
 
 No p-value is manufactured. These are screening statistics and remain diagnostic-only.
+
+
+## V0.7 Temporal Watch integration
+
+Volition now consumes Temporal Watch V1 records through `TemporalEventBridge`. Canonical UTC timestamps are converted to the model's non-negative relative-time axis, while stable Temporal IDs/source/refs remain attached to each `MotiveEvent`.
+
+The Temporal record's human-readable event text is never used to infer a motive target or drive. See `docs/TEMPORAL_INTEGRATION.md`.

@@ -260,3 +260,35 @@ TDD evidence:
 - full regression after implementation: 58/58 tests.
 
 Research basis remains Brown et al. 2002 time-rescaling plus the recorded 2025 warning about misuse of standard rescaling with fitted self-exciting models.
+
+## 2026-10-06 - Temporal Watch V1 bridge
+
+Live source refresh confirmed `thebrazenbeard/temporal` main at exact head `0fc7071a6b01e609fb2cdc76a32c73276ab27094`, matching the revision already recorded in Volition.
+
+Reviewed exact-head sources:
+- `README.md`;
+- `temporal.py`;
+- `docs/superpowers/specs/2026-09-08-temporal-watch-design.md`.
+
+Integration contract:
+- canonical stored UTC timestamp ending in Z;
+- stable event ID;
+- source and optional refs preserved on MotiveEvent;
+- Temporal timestamp converted to relative seconds from explicit canonical anchor;
+- duplicate Temporal IDs rejected by MotiveTemporalModel itself;
+- batch order reproduces timestamp then stable-ID ordering;
+- event text does not infer Volition target or DriveKind.
+
+TDD evidence:
+- valid red: `volition.temporal_bridge` module absent;
+- focused green: 7/7 Temporal bridge tests;
+- full regression after bridge implementation: 65/65 tests.
+
+Temporal remains chronology evidence, not semantic or authority evidence.
+
+Cross-repository verification against the actual Temporal exact-head implementation:
+- Temporal 13/13 tests passed;
+- actual `append_event` -> `load_events` record fed directly into Volition bridge;
+- offset input canonicalized by Temporal to UTC Z;
+- Volition relative-time conversion returned exactly 5.0 seconds from the configured anchor;
+- duplicate stable ID rejected on re-ingestion.
