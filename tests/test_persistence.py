@@ -1,4 +1,4 @@
-﻿import pytest
+import pytest
 
 from volition import DriveKind, Policy, Signal, VolitionEngine
 
@@ -46,9 +46,9 @@ def test_transition_events_are_ordered_and_never_effect_authority():
     events = engine.events
     assert [event.sequence for event in events] == list(range(1, len(events) + 1))
     assert [event.kind for event in events] == [
+        "CHOICE_RECORDED",
         "GOAL_ADOPTED",
         "COGNITION_REQUESTED",
         "SATISFACTION_RECORDED",
     ]
     assert all(event.effect_authority is False for event in events)
-

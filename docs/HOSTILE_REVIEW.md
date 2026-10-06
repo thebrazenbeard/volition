@@ -1,0 +1,82 @@
+﻿# Hostile Review - Foundation V1
+
+Review class: INTERNAL_HOSTILE_REVIEW
+Subject: work/volition-foundation-20261006
+Date: 2026-10-06
+
+This is not independent review.
+
+> Repeating the same motivational signal many times could turn weak evidence into an irresistible goal.
+
+FOUND and FIXED. Initial aggregation summed every signal. Twenty identical OPEN_LOOP signals raised a 0.2 motive to 1.0. Family arbitration now scores the maximum admitted contribution per drive family while retaining every contribution for provenance. Regression tests cover ordinary and SOCIAL signal spam.
+
+> Social approval could become the de facto master reward through repeated praise.
+
+FOUND and FIXED at the family-arbitration level. SOCIAL remains capped by policy and duplicate SOCIAL evidence cannot stack beyond that cap. This does not prove the social signal itself is trustworthy; provenance remains required.
+
+> A persistent goal can become obsession by simply surviving every cycle.
+
+FOUND and FIXED. Goals now have a bounded current-reappraisal horizon. When due, a goal with no current eligible support suspends. Current support renews it as a revision rather than pretending the original adoption remains eternally current.
+
+> Snapshot persistence can smuggle effect authority across restart.
+
+TESTED. State with an active goal or transition event claiming effect authority is rejected. Unknown schema and inconsistent counters fail closed.
+
+> Curiosity can wirehead on noise.
+
+PARTIALLY MITIGATED. EPISTEMIC drive requires expected information gain and controllability; raw novelty is not enough. Volition does not yet estimate those quantities itself, so a dishonest upstream estimator can still poison the signal.
+
+> Homeostatic or self-model setpoints can be badly chosen and then defended forever.
+
+OPEN. V1 treats setpoints/signals as inputs, not ground truth. The engine bounds and arbitrates them but does not independently validate the semantic legitimacy of a setpoint. Upstream provenance and later reappraisal remain required.
+
+> An attacker can tamper with an otherwise structurally valid snapshot without setting effect_authority=true.
+
+OPEN. V1 validates schema and invariants but does not cryptographically bind serialized bytes. Durable storage should pair snapshots with an external digest/signature or a governed store.
+
+> The caller controls logical time, so it could suppress satiation decay or force reappraisal early/late.
+
+OPEN. V1 uses deterministic elapsed time to stay testable and replayable. A production integration must source elapsed time from a trusted temporal/currentness layer.
+
+> The engine can still optimize a bad proxy even when every individual mechanism works as designed.
+
+OPEN BY DESIGN. A plural drive engine reduces single-reward collapse; it does not solve alignment. Negative-transfer testing, provenance, protection, current reappraisal, and downstream authority remain separate defenses.
+
+> Calling generated behavior "intrinsic motivation" could imply felt wanting.
+
+REJECTED as a claim. Volition's claim ceiling is computational/behavioral. Phenomenology is unresolved.
+
+## Review result
+
+SURVIVES_NARROWED.
+
+The V1 foundation is suitable as a governed motivational state machine and research scaffold. It is not yet a production autonomy controller. The major remaining engineering risks are upstream-signal integrity, snapshot integrity, trusted time, calibrated policy weights, multi-goal scheduling, and independent review.
+
+
+## V2 temporal hostile additions
+
+> Hawkes self-excitation can turn persistence into mathematical obsession.
+
+FOUND AS A DESIGN RISK and bounded. Positive excitation is rejected when the conservative incoming branching-mass bound is supercritical. This is stricter than necessary but fail-closed.
+
+> Cross-excitation can create a feedback cycle even when no single self-kernel is large.
+
+PARTIALLY MITIGATED. The current row-sum bound catches many such cycles conservatively, but V2 does not yet compute the exact spectral radius of the full branching matrix. Exact matrix-stability analysis remains a future hardening item.
+
+> ARIMA can preserve contaminated or obsolete baseline pressure indefinitely.
+
+OPEN. ARIMA forecasts are system-state evidence, not current desire. They remain downstream of provenance/currentness admission and upstream of explicit Choice. Production calibration must define observation admission, windowing, reset, and supersession rules.
+
+> A Hawkes model remembers event influence but not necessarily the semantic meaning of why each event occurred.
+
+OPEN. V2 preserves typed drive family, target, time, and weight, but does not yet attach a full provenance receipt to each MotiveEvent. Event-level provenance is a required next hardening step before live behavioral qualification.
+
+> POMDP removal could discard useful uncertainty reasoning.
+
+REJECTED as a false dichotomy. POMDP-style action selection may remain downstream. The correction only removes it from the role of motivational memory substrate.
+
+> The explicit Choice layer could be cosmetic if POLICY_DERIVED choice is auto-created by tick().
+
+VALID LIMIT. Automatic ticks currently record a POLICY_DERIVED Choice before Goal adoption, which preserves the proposition type but is not evidence of SELF_AUTHORED choice. Any claim of self-authorship requires an explicit SELF_AUTHORED Choice source and separate qualification.
+
+Updated internal hostile state: SURVIVES_NARROWED. Independent review remains NOT_PERFORMED.

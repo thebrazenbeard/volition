@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
@@ -11,6 +11,13 @@ class ProvenanceClass(StrEnum):
     HISTORICAL_EVIDENCE = "historical_evidence"
     MODEL_GENERATED = "model_generated"
     SYSTEM_STATE = "system_state"
+
+
+class ChoiceClass(StrEnum):
+    SELF_AUTHORED = "SELF_AUTHORED"
+    USER_DIRECTED = "USER_DIRECTED"
+    POLICY_DERIVED = "POLICY_DERIVED"
+    MODEL_PROPOSED = "MODEL_PROPOSED"
 
 
 class DriveKind(StrEnum):
@@ -59,10 +66,21 @@ class Want:
 
 
 @dataclass(frozen=True, slots=True)
+class ChoiceRecord:
+    choice_id: str
+    want_target: str
+    want_score: float
+    choice_class: ChoiceClass
+    source: str
+    effect_authority: bool = False
+
+
+@dataclass(frozen=True, slots=True)
 class Goal:
     goal_id: str
     target: str
     adoption_score: float
+    choice_id: str
     adopted_at_seconds: float = 0.0
     revision: int = 1
     status: str = "ACTIVE"

@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "volition"
-version = "0.1.0"
-description = "Governed behavioral drive engine for proactive AI agents"
+version = "0.2.0"
+description = "Governed temporal drive engine for proactive AI agents"
 requires-python = ">=3.11"
 
 [tool.setuptools.packages.find]
@@ -14,4 +14,3 @@ where = ["src"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
-

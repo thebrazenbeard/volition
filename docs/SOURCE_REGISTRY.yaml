@@ -1,8 +1,9 @@
-﻿schema: VOLITION_SOURCE_REGISTRY_V1
-status: INTERNAL_SOURCES_BOUND
+schema: VOLITION_SOURCE_REGISTRY_V1
+status: FOUNDATION_V2_HAWKES_ARIMA_IMPLEMENTED_ON_WORK_BRANCH
 subject:
   repository: thebrazenbeard/volition
   work_branch: work/volition-foundation-20261006
+
 source_policy:
   exact_revision_required_for_admission: true
   source_presence_is_not_authority: true
@@ -11,6 +12,7 @@ source_policy:
   motivation_is_not_effect_authority: true
   model_behavior_is_not_phenomenology_proof: true
   private_content_transfer: ABSTRACT_MECHANISMS_ONLY
+
 internal_sources:
   - repository: thebrazenbeard/pre-active
     head: 94cb3b8044d7a4263c50a96bfecfcfebc5533716
@@ -53,10 +55,12 @@ internal_sources:
   - repository: thebrazenbeard/project-runner
     head: 04702abbf51aa2920b7d054275619253ea6fa748
     role: bounded_governed_execution
-external_sources:
+
+external_repositories:
   - repository: infer-actively/pymdp
     head: fb214bf089fc3eba63c157349209f3fa217739a4
-    role: epistemic_value_active_inference
+    role: epistemic_value_and_optional_partial_observability_reference
+    scope: NOT_TEMPORAL_MEMORY_CORE
     transfer: RESEARCH_MECHANISM_ONLY
   - repository: openai/random-network-distillation
     head: f75c0f1efa473d5109d487062fd8ed49ddce6634
@@ -71,5 +75,44 @@ external_sources:
     head: 4b028fab07c69edaac2ddb4f7b9a43573ff20d81
     role: persistent_agent_state_and_schedules
     transfer: RESEARCH_MECHANISM_ONLY
+  - repository: statsmodels/statsmodels
+    head: 9648f97395f797419563b3c9ad87e9d2c7686303
+    role: arima_reference_and_future_parameter_estimation
+    transfer: DESIGN_EVIDENCE_ONLY
+  - repository: X-DataInitiative/tick
+    head: a40d19f868c22469be90c1e6c50bc3dab26ff070
+    role: hawkes_reference_implementation
+    transfer: DESIGN_EVIDENCE_ONLY
+  - repository: stmorse/hawkes
+    head: 3701f0fa6e9cc87c4899b653c7953177f40230ea
+    role: compact_hawkes_reference
+    transfer: DESIGN_EVIDENCE_ONLY
 
-
+academic_sources:
+  - locator: arXiv:2012.09830
+    title: Autotelic Agents with Intrinsically Motivated Goal-Conditioned Reinforcement Learning
+    role: self_generated_goal_representation_selection
+  - locator: DOI:10.7554/eLife.04811
+    title: Homeostatic reinforcement learning for integrating reward collection and physiological stability
+    role: homeostatic_drive_reduction
+  - locator: DOI:10.1080/17588928.2015.1020053
+    title: Active inference and epistemic value
+    role: epistemic_information_value_only
+  - locator: PMLR:70:2778-2787
+    title: Curiosity-driven Exploration by Self-supervised Prediction
+    role: prediction_error_curiosity
+  - locator: arXiv:1806.09948
+    title: The ARMA Point Process and its Estimation
+    role: arma_point_process_self_excitation
+  - locator: DOI:10.1016/j.insmatheco.2024.01.007
+    title: A Hawkes model with CARMA(p,q) intensity
+    role: autoregressive_moving_average_hawkes_intensity
+  - locator: arXiv:2106.04844
+    title: Nonlinear Hawkes Processes in Time-Varying System
+    role: time_varying_hawkes_background
+  - locator: DOI:10.1109/BIGDATA50022.2020.9378017
+    title: A Self-limiting Hawkes Process
+    role: excitation_inhibition
+  - locator: DOI:10.1214/21-AOAS1539
+    title: Markov-modulated Hawkes processes for modeling sporadic and bursty event occurrences
+    role: hidden_state_hawkes_contrast

@@ -126,3 +126,49 @@ Response: goals decay, encounter inhibition/satiation, receive periodic reapprai
 > "Intrinsic motivation" language can be mistaken for proof of felt desire.
 
 Response: the implementation claim ceiling is behavioral/computational. Phenomenology remains unresolved.
+
+
+## Temporal architecture correction: Hawkes + ARIMA
+
+Current design decision, 2026-10-06:
+
+POMDP/active-inference material is retained only for bounded epistemic/action-selection concepts. It is not Volition's motivational memory substrate.
+
+FACT: a POMDP uses Markov latent-state dynamics, while its belief state can summarize the prior action/observation history. Therefore "POMDP is memoryless" is too coarse; the sharper objection is that Volition wants typed path dependence to remain explicit rather than compressed into a generic belief state.
+
+Volition's temporal core is now:
+- ARIMA-style forecasting for slow baseline motive pressure;
+- multivariate Hawkes dynamics for fast self-excitation, cross-excitation, decay, and inhibition;
+- ordinary Volition arbitration/Choice/Goal logic after those temporal components produce typed signals.
+
+### ARMA point process
+
+Wheatley, Schatz, and Sornette, "The ARMA Point Process and its Estimation", arXiv:1806.09948.
+
+Relevant result: autoregressive/moving-average structure and clustered self-exciting point-process structure can be combined in one event-process framework.
+
+### CARMA(p,q)-Hawkes
+
+Mercuri, Perchiazzo, and Rroji, "A Hawkes model with CARMA(p,q) intensity", Insurance: Mathematics and Economics (2024), DOI 10.1016/j.insmatheco.2024.01.007.
+
+Relevant result: Hawkes intensity can be generalized with continuous-time autoregressive moving-average structure to represent richer autocorrelation than a simple exponential Hawkes kernel.
+
+Volition does not copy this model directly. V2 uses a simpler, inspectable decomposition: discrete ARIMA baseline plus explicit Hawkes excitation.
+
+### Nonstationary and self-limiting Hawkes
+
+Zhou et al., "Nonlinear Hawkes Processes in Time-Varying System", arXiv:2106.04844, supports time-varying background dynamics.
+
+Olinde and Short, "A Self-limiting Hawkes Process", DOI 10.1109/BIGDATA50022.2020.9378017, supports modeling inhibition alongside self-excitation.
+
+### Markov-modulated Hawkes as contrast
+
+Wu et al., DOI 10.1214/21-AOAS1539, models bursty event dynamics with a hidden Markov state. This remains useful prior art but is not the selected Volition core because the present design preserves explicit ARIMA/Hawkes temporal contributions.
+
+### Public implementation references
+
+- statsmodels/statsmodels @ 9648f97395f797419563b3c9ad87e9d2c7686303  ARIMA estimation/reference surface.
+- X-DataInitiative/tick @ a40d19f868c22469be90c1e6c50bc3dab26ff070  Hawkes-process implementation/reference surface.
+- stmorse/hawkes @ 3701f0fa6e9cc87c4899b653c7953177f40230ea  compact Hawkes reference.
+
+No implementation code was copied from these repositories.

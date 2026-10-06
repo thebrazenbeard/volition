@@ -1,8 +1,10 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 
 from .models import (
+    ChoiceClass,
+    ChoiceRecord,
     CognitionRequest,
     DriveContribution,
     DriveKind,
@@ -14,7 +16,7 @@ from .models import (
 )
 
 
-STATE_SCHEMA = "VOLITION_STATE_V1"
+STATE_SCHEMA = "VOLITION_STATE_V2"
 
 
 def _unit(value: float) -> float:
@@ -34,12 +36,14 @@ class Policy:
 
 
 class VolitionEngine:
-    """Deterministic motive arbitration with no effect-dispatch authority."""
+    """Deterministic motive arbitration with explicit choice and no effect dispatch."""
 
     def __init__(self, policy: Policy | None = None) -> None:
         self.policy = policy or Policy()
         self._active_goal: Goal | None = None
         self._goal_counter = 0
+        self._choice_counter = 0
+        self._choices: dict[str, ChoiceRecord] = {}
         self._endogenous_turns = 0
         self._satiation: dict[str, float] = {}
         self._elapsed_seconds = 0.0
@@ -48,6 +52,10 @@ class VolitionEngine:
     @property
     def active_goal(self) -> Goal | None:
         return self._active_goal
+
+    @property
+    def choices(self) -> tuple[ChoiceRecord, ...]:
+        return tuple(self._choices.values())
 
     @property
     def events(self) -> tuple[TransitionEvent, ...]:
@@ -149,29 +157,80 @@ class VolitionEngine:
         wants.sort(key=lambda want: (-want.score, want.target))
         return wants
 
-    def adopt(self, want: Want) -> Goal:
+    def choose(
+        self,
+        want: Want,
+        *,
+        choice_class: ChoiceClass | str = ChoiceClass.POLICY_DERIVED,
+        source: str = "volition:policy",
+    ) -> ChoiceRecord:
         if not want.eligible or want.vetoed:
-            raise ValueError("want is not eligible for goal adoption")
+            raise ValueError("want is not eligible for choice")
+        try:
+            resolved_class = ChoiceClass(choice_class)
+        except ValueError as exc:
+            raise ValueError("unsupported choice class") from exc
+        if not source:
+            raise ValueError("choice source is required")
+
+        self._choice_counter += 1
+        choice = ChoiceRecord(
+            choice_id=f"choice-{self._choice_counter:04d}",
+            want_target=want.target,
+            want_score=want.score,
+            choice_class=resolved_class,
+            source=source,
+        )
+        self._choices[choice.choice_id] = choice
+        self._emit(
+            "CHOICE_RECORDED",
+            choice.want_target,
+            choice_id=choice.choice_id,
+            choice_class=choice.choice_class.value,
+            source=choice.source,
+            score=choice.want_score,
+        )
+        return choice
+
+    def adopt_choice(self, choice_id: str) -> Goal:
+        choice = self._choices.get(choice_id)
+        if choice is None:
+            raise ValueError("unknown choice")
         self._goal_counter += 1
         goal = Goal(
             goal_id=f"goal-{self._goal_counter:04d}",
-            target=want.target,
-            adoption_score=want.score,
+            target=choice.want_target,
+            adoption_score=choice.want_score,
+            choice_id=choice.choice_id,
             adopted_at_seconds=self._elapsed_seconds,
         )
         self._active_goal = goal
         self._endogenous_turns = 0
-        self._emit("GOAL_ADOPTED", goal.target, goal_id=goal.goal_id, score=goal.adoption_score)
+        self._emit(
+            "GOAL_ADOPTED",
+            goal.target,
+            goal_id=goal.goal_id,
+            choice_id=goal.choice_id,
+            score=goal.adoption_score,
+        )
         return goal
+
+    def adopt(self, want: Want) -> Goal:
+        return self.adopt_choice(
+            self.choose(
+                want,
+                choice_class=ChoiceClass.POLICY_DERIVED,
+                source="volition:policy",
+            ).choice_id
+        )
 
     def _reappraise_active_goal(self, wants: list[Want]) -> None:
         if self._active_goal is None:
             return
         horizon = self.policy.goal_reappraisal_seconds
-        if horizon <= 0:
-            due = True
-        else:
-            due = (self._elapsed_seconds - self._active_goal.adopted_at_seconds) >= horizon
+        due = horizon <= 0 or (
+            self._elapsed_seconds - self._active_goal.adopted_at_seconds
+        ) >= horizon
         if not due:
             return
 
@@ -194,6 +253,7 @@ class VolitionEngine:
             goal_id=previous.goal_id,
             target=previous.target,
             adoption_score=candidate.score,
+            choice_id=previous.choice_id,
             adopted_at_seconds=self._elapsed_seconds,
             revision=previous.revision + 1,
         )
@@ -202,6 +262,7 @@ class VolitionEngine:
             "GOAL_REAPPRAISED",
             previous.target,
             goal_id=previous.goal_id,
+            choice_id=previous.choice_id,
             revision=self._active_goal.revision,
         )
 
@@ -247,7 +308,12 @@ class VolitionEngine:
             and self._active_goal.target == target
             and amount >= 0.7
         ):
-            self._emit("GOAL_COMPLETED", target, goal_id=self._active_goal.goal_id)
+            self._emit(
+                "GOAL_COMPLETED",
+                target,
+                goal_id=self._active_goal.goal_id,
+                choice_id=self._active_goal.choice_id,
+            )
             self._active_goal = None
             self._endogenous_turns = 0
 
@@ -293,6 +359,18 @@ class VolitionEngine:
             "policy": asdict(self.policy),
             "active_goal": asdict(self._active_goal) if self._active_goal else None,
             "goal_counter": self._goal_counter,
+            "choice_counter": self._choice_counter,
+            "choices": [
+                {
+                    "choice_id": choice.choice_id,
+                    "want_target": choice.want_target,
+                    "want_score": choice.want_score,
+                    "choice_class": choice.choice_class.value,
+                    "source": choice.source,
+                    "effect_authority": choice.effect_authority,
+                }
+                for choice in self._choices.values()
+            ],
             "endogenous_turns": self._endogenous_turns,
             "satiation": dict(self._satiation),
             "elapsed_seconds": self._elapsed_seconds,
@@ -308,23 +386,49 @@ class VolitionEngine:
             raise ValueError("snapshot policy is invalid")
         engine = cls(Policy(**raw_policy))
 
+        raw_choices = snapshot.get("choices", [])
+        if not isinstance(raw_choices, list):
+            raise ValueError("snapshot choices are invalid")
+        for raw_choice in raw_choices:
+            if not isinstance(raw_choice, dict) or raw_choice.get("effect_authority") is not False:
+                raise ValueError("snapshot choice violates authority boundary")
+            choice = ChoiceRecord(
+                choice_id=str(raw_choice["choice_id"]),
+                want_target=str(raw_choice["want_target"]),
+                want_score=float(raw_choice["want_score"]),
+                choice_class=ChoiceClass(str(raw_choice["choice_class"])),
+                source=str(raw_choice["source"]),
+                effect_authority=False,
+            )
+            if choice.choice_id in engine._choices:
+                raise ValueError("snapshot contains duplicate choice")
+            engine._choices[choice.choice_id] = choice
+
         raw_goal = snapshot.get("active_goal")
         if raw_goal is not None:
             if not isinstance(raw_goal, dict) or raw_goal.get("effect_authority") is not False:
                 raise ValueError("snapshot goal violates authority boundary")
             engine._active_goal = Goal(**raw_goal)
+            if engine._active_goal.choice_id not in engine._choices:
+                raise ValueError("snapshot active goal has unknown choice")
 
         engine._goal_counter = int(snapshot.get("goal_counter", 0))
+        engine._choice_counter = int(snapshot.get("choice_counter", 0))
         engine._endogenous_turns = int(snapshot.get("endogenous_turns", 0))
-        if engine._goal_counter < 0 or engine._endogenous_turns < 0:
+        if engine._goal_counter < 0 or engine._choice_counter < 0 or engine._endogenous_turns < 0:
             raise ValueError("snapshot counters must be non-negative")
+        if engine._choice_counter < len(engine._choices):
+            raise ValueError("snapshot choice counter is inconsistent")
         if engine._endogenous_turns > engine.policy.endogenous_turn_budget:
             raise ValueError("snapshot cognition budget is inconsistent")
 
         raw_satiation = snapshot.get("satiation", {})
         if not isinstance(raw_satiation, dict):
             raise ValueError("snapshot satiation is invalid")
-        engine._satiation = {str(key): _unit(float(value)) for key, value in raw_satiation.items()}
+        engine._satiation = {
+            str(key): _unit(float(value))
+            for key, value in raw_satiation.items()
+        }
         engine._elapsed_seconds = float(snapshot.get("elapsed_seconds", 0.0))
         if engine._elapsed_seconds < 0:
             raise ValueError("snapshot elapsed time must be non-negative")
