@@ -1,5 +1,5 @@
 schema: VOLITION_SOURCE_REGISTRY_V1
-status: FOUNDATION_V2_HAWKES_ARIMA_IMPLEMENTED_ON_WORK_BRANCH
+status: FOUNDATION_V2_1_DIFFUSION_IMPLEMENTED_ON_WORK_BRANCH
 subject:
   repository: thebrazenbeard/volition
   work_branch: work/volition-foundation-20261006
@@ -116,3 +116,15 @@ academic_sources:
   - locator: DOI:10.1214/21-AOAS1539
     title: Markov-modulated Hawkes processes for modeling sporadic and bursty event occurrences
     role: hidden_state_hawkes_contrast
+
+
+diffusion_academic_sources:
+  - locator: arXiv:1609.06831
+    title: Hawkes Processes with Stochastic Excitations
+    role: stochastic_excitation_sde_and_geometric_brownian_langevin_examples
+  - locator: DOI:10.1214/23-AAP2005
+    title: Diffusion approximations for self-excited systems with applications to general branching processes
+    role: diffusion_limit_of_multivariate_hawkes_systems
+  - locator: DOI:10.1007/S10959-017-0789-6
+    title: Large deviations for cascades of diffusions arising in oscillating systems of interacting Hawkes processes
+    role: brownian_driven_diffusion_approximation_with_hawkes_memory

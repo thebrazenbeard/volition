@@ -141,3 +141,70 @@ Open risk: calibration/admission of baseline observations is not solved by the t
 > A compact exponential Hawkes recursion could again hide the meaningful history.
 
 Guard: event provenance and typed kernels are the semantic record. Computational compression is permitted only if it preserves the same causal contributions and readback.
+
+
+## Diffusion extension: Brownian and Ornstein-Uhlenbeck
+
+Volition V2.1 adds an optional continuous stochastic deviation term between the ARIMA baseline and Hawkes event-history component:
+
+`lambda[x,k](t) = max(0, mu_ARIMA[x,k](t) + D[x,k](t) + H[x,k](t))`
+
+The implementation preserves four separate values:
+- `arima_baseline`: deterministic slow forecast;
+- `diffusion`: current stochastic deviation;
+- `excitation`: Hawkes event-history contribution;
+- `total`: non-negative combined intensity.
+
+### Brownian motion
+
+`BrownianMotion` implements the replayable increment
+
+`X(t + dt) = X(t) + drift * dt + volatility * sqrt(dt) * epsilon`
+
+where `epsilon` is supplied by the caller.
+
+Brownian motion is useful as:
+- a primitive innovation process;
+- a null continuous diffusion;
+- a component of richer SDEs.
+
+It is not the default motive-state model because its variance grows without bound and it does not mean-revert.
+
+### Ornstein-Uhlenbeck
+
+`OrnsteinUhlenbeck` is the preferred optional diffusion for motive baselines because it is Brownian-driven but mean-reverting.
+
+V2.1 uses the exact OU transition for a supplied innovation rather than Euler approximation. This preserves deterministic replay while allowing a continuous stochastic deviation around a long-run mean.
+
+### Why innovations are caller-supplied
+
+Volition does not sample hidden randomness internally.
+
+A production runtime may obtain innovations from a governed random source, but the engine receives the realized innovation explicitly. This makes:
+- state transitions reproducible;
+- tests deterministic;
+- receipts sufficient to replay the same diffusion path;
+- stochasticity distinguishable from unexplained model behavior.
+
+### Research support
+
+Lee, Lim, and Ong, "Hawkes Processes with Stochastic Excitations", ICML 2016 / arXiv:1609.06831.
+
+Relevant result: Hawkes excitation amplitudes can themselves follow stochastic differential equations; the paper demonstrates geometric Brownian motion and exponential Langevin dynamics.
+
+Xu, "Diffusion approximations for self-excited systems with applications to general branching processes", Annals of Applied Probability (2024), DOI 10.1214/23-AAP2005.
+
+Relevant result: suitably scaled multivariate marked Hawkes/self-excited systems admit diffusion approximations described by stochastic differential equations.
+
+Loecherbach, "Large deviations for cascades of diffusions arising in oscillating systems of interacting Hawkes processes", DOI 10.1007/S10959-017-0789-6.
+
+Relevant result: diffusion approximations of interacting Hawkes intensity dynamics can be driven by Brownian motion while retaining Hawkes memory structure.
+
+### Boundary
+
+Diffusion modifies expected temporal pressure only. It does not:
+- create a Want by itself;
+- classify a Choice as SELF_AUTHORED;
+- create consent;
+- create effect authority;
+- establish phenomenology.

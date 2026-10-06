@@ -6,7 +6,7 @@ It is built to make reactive models more proactive without collapsing motivation
 
 `SALIENCE != DRIVE != WANT != CHOICE != GOAL != CONSENT != AUTHORITY != ACTION != PHENOMENOLOGY`
 
-## Foundation V2
+## Foundation V2.1
 
 The current work branch implements:
 - eight typed motive families: homeostatic, epistemic, competence, empowerment, open-loop, social, self-model, and protection;
@@ -20,6 +20,7 @@ The current work branch implements:
 - ordered transition receipts;
 - ARIMA slow-baseline motive forecasts;
 - multivariate Hawkes self-/cross-excitation and inhibition;
+- optional replayable Brownian diffusion and mean-reverting Ornstein-Uhlenbeck diffusion;
 - conservative subcriticality checks against runaway excitation;
 - hard `effect_authority=False` boundaries throughout.
 
@@ -29,7 +30,7 @@ Volition does not use POMDP belief state as its motivational memory substrate.
 
 POMDP latent dynamics are Markov, although a belief state can summarize history. Volition instead keeps motivational dynamics explicit:
 
-`ARIMA slow baseline + Hawkes event-history excitation/inhibition -> typed Signal -> Want -> Choice -> Goal`
+`ARIMA slow baseline + optional diffusion + Hawkes event-history excitation/inhibition -> typed Signal -> Want -> Choice -> Goal`
 
 That makes recurrence, cross-excitation, decay, and slow drift first-class rather than burying them inside a generic state belief.
 
@@ -90,19 +91,33 @@ The cognition request is a reason to think again. It is not authorization to per
 
 Internal sources include pre-active, conations, MESO-CRCT, Vera, the control plane, empathy, Semantic Atlas, DeepMemory, Selfimage, Temporal, and Project Runner. Sexuality/Orgasm contribute only abstract public-safe mechanisms; intimate material is not copied into Volition.
 
-External research includes autotelic goal generation, homeostatic RL, epistemic value, curiosity/learning progress, BDI separation, Hawkes processes, ARMA/CARMA-Hawkes work, self-limiting Hawkes models, and ARIMA reference implementations.
+External research includes autotelic goal generation, homeostatic RL, epistemic value, curiosity/learning progress, BDI separation, Hawkes processes, ARMA/CARMA-Hawkes work, Brownian/SDE-driven Hawkes variants, self-limiting Hawkes models, and ARIMA reference implementations.
 
 See:
 - `docs/INTERNAL_SYNTHESIS.md`
 - `docs/EXTERNAL_RESEARCH.md`
 - `docs/EXTERNAL_PRIOR_ART.md`
 - `docs/TEMPORAL_DYNAMICS.md`
+- `docs/MODEL_SELECTION.md`
 - `docs/SOURCE_REGISTRY.yaml`
 - `docs/ARCHITECTURE.md`
 - `docs/HOSTILE_REVIEW.md`
 
 ## Status
 
-FOUNDATION_V2_IMPLEMENTED_AND_TESTED_ON_WORK_BRANCH
+FOUNDATION_V2_1_DIFFUSION_IMPLEMENTED_AND_TESTED_ON_WORK_BRANCH
 
 This does not mean merged to `main`, installed into a runtime, behaviorally qualified in a live agent, or independently reviewed.
+
+
+## V2.1 diffusion extension
+
+The temporal stack now optionally includes a replayable diffusion term:
+
+`ARIMA baseline + Brownian/OU diffusion + Hawkes history -> typed Signal`
+
+Raw Brownian motion is available as a stochastic innovation primitive. Ornstein-Uhlenbeck is the preferred optional diffusion when the deviation should mean-revert instead of wandering without bound.
+
+The caller supplies each realized innovation explicitly; Volition does not hide random sampling inside the engine. See `docs/TEMPORAL_DYNAMICS.md` and `docs/MODEL_SELECTION.md`.
+
+Current full regression after this extension: 33 tests passing before exact-head closeout.

@@ -1,4 +1,4 @@
-﻿# Volition Research Ledger
+# Volition Research Ledger
 
 This ledger records the evidence used to build Volition. Each entry binds a source to an exact revision where possible, states what was learned, and states what the source does not prove.
 
@@ -77,7 +77,7 @@ Hostile hardening:
 After repair, full suite: 16 passed.
 
 Current classification:
-- source/build state: FOUNDATION_V1_IMPLEMENTED_ON_WORK_BRANCH;
+- source/build state at that checkpoint: FOUNDATION_V1_IMPLEMENTED_ON_WORK_BRANCH;
 - internal hostile review: SURVIVES_NARROWED;
 - independent review: NOT_PERFORMED;
 - main merge: NOT_PERFORMED;
@@ -126,3 +126,36 @@ External references added:
 - stmorse/hawkes @ 3701f0fa6e9cc87c4899b653c7953177f40230ea.
 
 No third-party implementation code was copied.
+
+
+## 2026-10-06 - Brownian / diffusion extension
+
+Brownian motion was evaluated as a possible Volition component.
+
+Decision:
+- raw Brownian motion is admitted as a low-level stochastic innovation/diffusion primitive;
+- Ornstein-Uhlenbeck is preferred when motive noise should remain mean-reverting;
+- neither replaces ARIMA nor Hawkes;
+- diffusion state is added to the slow baseline and remains separately inspectable from event-history excitation.
+
+Research support:
+- Lee, Lim, Ong, Hawkes Processes with Stochastic Excitations, arXiv:1609.06831 / ICML 2016;
+- Xu, Diffusion approximations for self-excited systems with applications to general branching processes, DOI 10.1214/23-AAP2005;
+- Loecherbach, Large deviations for cascades of diffusions arising in oscillating systems of interacting Hawkes processes, DOI 10.1007/S10959-017-0789-6.
+
+Implementation evidence:
+- diffusion red: BrownianMotion and OrnsteinUhlenbeck imports absent;
+- diffusion green: 6/6 tests;
+- full regression after diffusion implementation: 33/33 tests.
+
+The implementation uses caller-supplied innovations so stochastic transitions can be replayed exactly. Internal random sampling is intentionally absent.
+
+
+Current diffusion closeout classification:
+- source/build state: FOUNDATION_V2_1_DIFFUSION_IMPLEMENTED_ON_WORK_BRANCH;
+- Brownian/OU implementation: TESTED;
+- mathematical model selection matrix: RECORDED;
+- internal hostile review: SURVIVES_NARROWED;
+- independent review: NOT_PERFORMED;
+- main merge: NOT_PERFORMED;
+- runtime install/consumption: NOT_ESTABLISHED.

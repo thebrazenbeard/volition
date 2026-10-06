@@ -13,14 +13,17 @@ from .models import (
 )
 from .temporal import (
     ARIMABaseline,
+    BrownianMotion,
     HawkesKernel,
     MotiveEvent,
     MotiveTemporalModel,
+    OrnsteinUhlenbeck,
     TemporalIntensity,
 )
 
 __all__ = [
     "ARIMABaseline",
+    "BrownianMotion",
     "ChoiceClass",
     "ChoiceRecord",
     "CognitionRequest",
@@ -30,6 +33,7 @@ __all__ = [
     "HawkesKernel",
     "MotiveEvent",
     "MotiveTemporalModel",
+    "OrnsteinUhlenbeck",
     "Policy",
     "ProvenanceClass",
     "STATE_SCHEMA",

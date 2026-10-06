@@ -1,4 +1,4 @@
-# Volition Architecture V2
+# Volition Architecture V2.1
 
 ## Purpose
 
@@ -15,7 +15,7 @@ A strong motive changes what is worth considering. It does not enlarge effect au
 `OBSERVATIONS + MOTIVE EVENTS`
 `        |`
 `        v`
-`ARIMA SLOW BASELINE + MULTIVARIATE HAWKES FAST EXCITATION`
+`ARIMA SLOW BASELINE + OPTIONAL DIFFUSION + MULTIVARIATE HAWKES FAST EXCITATION`
 `        |`
 `        v`
 `TYPED SIGNALS -> DRIVE TRANSFORMS -> FAMILY ARBITRATION -> WANT -> CHOICE -> GOAL -> COGNITION REQUEST`
@@ -24,21 +24,23 @@ External action systems remain beyond a separate authority gate that Volition do
 
 ## 1. Temporal motive dynamics
 
-Volition uses two temporal scales.
+Volition uses a decomposed temporal model with slow forecast, optional stochastic deviation, and event-history effects.
 
 ARIMA represents the slower expected baseline for a target/drive stream: trend, autoregressive persistence, differencing, and moving-average residual effects.
 
-Hawkes dynamics represent event-history effects: a motive event can transiently self-excite, cross-excite, or inhibit another motive family. With exponential kernels, V1 computes
+Optional diffusion represents continuous stochastic deviation around the slow forecast. Brownian motion is available as a replayable primitive; Ornstein-Uhlenbeck is the preferred mean-reverting form.
 
-`lambda_k(t) = max(0, mu_k(t) + sum_e alpha[j->k] * w_e * exp(-beta[j->k] * (t - t_e)))`
+Hawkes dynamics represent event-history effects: a motive event can transiently self-excite, cross-excite, or inhibit another motive family. With exponential kernels, V2.1 computes
 
-where `mu_k(t)` is the ARIMA baseline forecast.
+`lambda_k(t) = max(0, mu_k(t) + D_k(t) + sum_e alpha[j->k] * w_e * exp(-beta[j->k] * (t - t_e)))`
+
+where `mu_k(t)` is the ARIMA baseline forecast and `D_k(t)` is an optional diffusion state.
 
 The bounded activation sent into the ordinary drive engine is
 
 `activation = 1 - exp(-lambda)`.
 
-The baseline and excitation components remain separately inspectable; they are not collapsed into an opaque reward.
+The ARIMA baseline, diffusion deviation, and Hawkes excitation components remain separately inspectable; they are not collapsed into an opaque reward.
 
 ### Why not POMDP as the memory substrate?
 
@@ -181,3 +183,14 @@ Volition has no tool-dispatch or provider-mutation API. Downstream execution req
 Passing tests supports a computational claim: the software implements the stated temporal-drive, arbitration, choice, persistence, and authority-separation contracts.
 
 It does not establish consciousness, phenomenal desire, moral patienthood, consent, identity continuity, permission to act, or runtime installation merely because source exists.
+
+
+## V2.1 stochastic baseline deviation
+
+An optional diffusion term may modify the slow temporal baseline before Hawkes excitation:
+
+`lambda(t) = max(0, ARIMA(t) + diffusion(t) + HawkesHistory(t))`.
+
+Brownian motion is implemented as a replayable primitive. Ornstein-Uhlenbeck is preferred for mean-reverting stochastic deviation. Diffusion, ARIMA baseline, and Hawkes excitation remain separately inspectable.
+
+A diffusion value is system state, not Want, Choice, consent, authority, or phenomenology.

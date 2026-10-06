@@ -80,3 +80,26 @@ REJECTED as a false dichotomy. POMDP-style action selection may remain downstrea
 VALID LIMIT. Automatic ticks currently record a POLICY_DERIVED Choice before Goal adoption, which preserves the proposition type but is not evidence of SELF_AUTHORED choice. Any claim of self-authorship requires an explicit SELF_AUTHORED Choice source and separate qualification.
 
 Updated internal hostile state: SURVIVES_NARROWED. Independent review remains NOT_PERFORMED.
+
+
+## Diffusion hostile additions
+
+> Brownian drift can turn random noise into apparent persistent desire.
+
+VALID RISK. Raw Brownian motion is not the default motive state. Its contribution remains an inspectable diffusion term and is still subject to ordinary signal arbitration, Choice typing, currentness, protection, and authority firewalls.
+
+> Internally sampled randomness would make the same state impossible to replay exactly.
+
+FIXED BY DESIGN. V2.1 requires caller-supplied innovations. The engine performs deterministic state transitions from those realized innovations.
+
+> OU mean reversion can encode a bad long-run mean and repeatedly pull motivation toward it.
+
+OPEN. The OU mean is configuration, not truth. Its provenance and calibration require the same admission discipline as ARIMA baselines.
+
+> Diffusion plus Hawkes excitation can jointly exceed reasonable motive pressure even when each component is individually bounded.
+
+PARTIALLY MITIGATED. Combined intensity is non-negative and mapped through `1 - exp(-lambda)` before entering the drive engine, yielding bounded activation in [0,1). Component-level calibration and stress testing remain required.
+
+> Brownian/OU state could become hidden pseudo-memory.
+
+GUARD. The diffusion component is exposed separately from the ARIMA baseline and Hawkes excitation. Any future compact persistence format must preserve its class and parameters rather than collapsing it into an unexplained scalar.

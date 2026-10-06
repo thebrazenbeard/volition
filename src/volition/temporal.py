@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from math import exp
+from math import exp, isfinite, sqrt
 
 from .models import DriveKind, ProvenanceClass, Signal
 
@@ -72,6 +72,86 @@ class ARIMABaseline:
         return self._levels[-1] + self._stationary_forecast(self._diffs)
 
 
+@dataclass(slots=True)
+class BrownianMotion:
+    """Replayable Brownian diffusion.
+
+    Innovation is supplied explicitly instead of sampled internally so model
+    state can be replayed exactly from receipts.
+    """
+
+    value: float = 0.0
+    drift: float = 0.0
+    volatility: float = 1.0
+    elapsed_seconds: float = 0.0
+
+    def __post_init__(self) -> None:
+        if self.volatility < 0:
+            raise ValueError("Brownian volatility must be non-negative")
+
+    def advance(self, seconds: float, *, innovation: float) -> float:
+        seconds = float(seconds)
+        innovation = float(innovation)
+        if seconds < 0:
+            raise ValueError("seconds must be non-negative")
+        if not isfinite(innovation):
+            raise ValueError("innovation must be finite")
+        if seconds == 0:
+            return self.value
+        self.value += (
+            self.drift * seconds
+            + self.volatility * sqrt(seconds) * innovation
+        )
+        self.elapsed_seconds += seconds
+        return self.value
+
+
+@dataclass(slots=True)
+class OrnsteinUhlenbeck:
+    """Replayable mean-reverting Gaussian diffusion.
+
+    Uses the exact OU transition for a supplied standard-normal innovation.
+    """
+
+    value: float = 0.0
+    mean: float = 0.0
+    reversion_rate: float = 1.0
+    volatility: float = 1.0
+    elapsed_seconds: float = 0.0
+
+    def __post_init__(self) -> None:
+        if self.reversion_rate <= 0:
+            raise ValueError("OU reversion_rate must be positive")
+        if self.volatility < 0:
+            raise ValueError("OU volatility must be non-negative")
+
+    def advance(self, seconds: float, *, innovation: float) -> float:
+        seconds = float(seconds)
+        innovation = float(innovation)
+        if seconds < 0:
+            raise ValueError("seconds must be non-negative")
+        if not isfinite(innovation):
+            raise ValueError("innovation must be finite")
+        if seconds == 0:
+            return self.value
+
+        decay = exp(-self.reversion_rate * seconds)
+        variance_scale = sqrt(
+            (1.0 - exp(-2.0 * self.reversion_rate * seconds))
+            / (2.0 * self.reversion_rate)
+        )
+        self.value = (
+            self.mean
+            + (self.value - self.mean) * decay
+            + self.volatility * variance_scale * innovation
+        )
+        self.elapsed_seconds += seconds
+        return self.value
+
+
+DiffusionProcess = BrownianMotion | OrnsteinUhlenbeck
+
+
 @dataclass(frozen=True, slots=True)
 class HawkesKernel:
     source_kind: DriveKind
@@ -97,6 +177,8 @@ class TemporalIntensity:
     target: str
     kind: DriveKind
     at_seconds: float
+    arima_baseline: float
+    diffusion: float
     baseline: float
     excitation: float
     total: float
@@ -104,11 +186,11 @@ class TemporalIntensity:
 
 
 class MotiveTemporalModel:
-    """ARIMA baseline plus typed multivariate Hawkes excitation.
+    """ARIMA baseline + optional diffusion + typed Hawkes excitation.
 
-    Slow state is represented by per-target/per-drive ARIMA baselines. Fast
-    path-dependent bursts are represented by Hawkes kernels over motive events.
-    Positive excitation is constrained to a conservative subcritical regime.
+    Slow expected pressure comes from ARIMA. Optional continuous stochastic
+    deviation is represented by Brownian or OU state. Fast event-history
+    effects remain Hawkes excitation/inhibition and are separately inspectable.
     """
 
     def __init__(
@@ -122,6 +204,7 @@ class MotiveTemporalModel:
         self.kernels = tuple(kernels)
         self.stability_limit = float(stability_limit)
         self._baselines: dict[tuple[str, DriveKind], ARIMABaseline] = {}
+        self._diffusions: dict[tuple[str, DriveKind], DiffusionProcess] = {}
         self._events: list[MotiveEvent] = []
         self._validate_subcritical()
 
@@ -164,6 +247,34 @@ class MotiveTemporalModel:
             self._baselines[(target, kind)] = baseline
         return baseline.observe(value)
 
+    def set_diffusion(
+        self,
+        target: str,
+        kind: DriveKind,
+        diffusion: DiffusionProcess,
+    ) -> None:
+        self._diffusions[(target, kind)] = diffusion
+
+    def diffusion(
+        self,
+        target: str,
+        kind: DriveKind,
+    ) -> DiffusionProcess | None:
+        return self._diffusions.get((target, kind))
+
+    def advance_diffusion(
+        self,
+        target: str,
+        kind: DriveKind,
+        *,
+        seconds: float,
+        innovation: float,
+    ) -> float:
+        diffusion = self._diffusions.get((target, kind))
+        if diffusion is None:
+            raise ValueError("no diffusion configured for target/drive")
+        return diffusion.advance(seconds, innovation=innovation)
+
     def observe_event(
         self,
         target: str,
@@ -195,8 +306,16 @@ class MotiveTemporalModel:
         if at_seconds < 0:
             raise ValueError("query time must be non-negative")
 
-        baseline_model = self._baselines.get((target, kind))
-        baseline = 0.0 if baseline_model is None else max(0.0, baseline_model.forecast())
+        key = (target, kind)
+        baseline_model = self._baselines.get(key)
+        arima_baseline = (
+            0.0 if baseline_model is None else float(baseline_model.forecast())
+        )
+        diffusion_model = self._diffusions.get(key)
+        diffusion_value = (
+            0.0 if diffusion_model is None else float(diffusion_model.value)
+        )
+        baseline = max(0.0, arima_baseline + diffusion_value)
 
         excitation = 0.0
         for kernel in self.kernels:
@@ -220,6 +339,8 @@ class MotiveTemporalModel:
             target=target,
             kind=kind,
             at_seconds=float(at_seconds),
+            arima_baseline=arima_baseline,
+            diffusion=diffusion_value,
             baseline=baseline,
             excitation=excitation,
             total=total,
@@ -235,11 +356,16 @@ class MotiveTemporalModel:
         confidence: float = 1.0,
     ) -> Signal:
         result = self.intensity(target, kind, at_seconds=at_seconds)
+        source = (
+            "temporal:hawkes-arima-diffusion"
+            if (target, kind) in self._diffusions
+            else "temporal:hawkes-arima"
+        )
         return Signal(
             target=target,
             kind=kind,
             magnitude=result.activation,
             confidence=confidence,
             provenance=ProvenanceClass.SYSTEM_STATE,
-            source="temporal:hawkes-arima",
+            source=source,
         )
