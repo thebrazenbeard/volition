@@ -164,7 +164,7 @@ Volition may propose an endogenous cognition request. pre-active decides whether
 
 ### conations / memory
 
-Historical conations can be evidence for current reappraisal. They do not hydrate directly into current wants or choices.
+Append-only lifecycle records enter only as `HISTORICAL_EVIDENCE`. Stored lifecycle labels never hydrate directly into current Wants or Choices. `ConationBridge.reappraise(...)` requires a separate fresh current statement or observation matching the same target and drive family; the historical contribution is capped by that current evidence. Terminal or superseded records require new evidence rather than reactivation.
 
 ### MESO-CRCT
 

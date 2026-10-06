@@ -345,3 +345,14 @@ Cross-repository evidence:
 - approach evidence yielded an eligible Want without creating Choice/Goal;
 - protective withdrawal yielded the normal Volition protection veto;
 - hold yielded no signal.
+
+## 2026-10-06 - V0.10 historical-currentness adapter
+
+Source refresh: thebrazenbeard/conations @ 51948aac796936f0e7c437722e6f52c883e544e9.
+Reviewed README.md, CONATION_WORKSPACE.md, and EVENT_INDEX.md.
+
+Implemented: historical provenance by default; separate fresh-current corroboration; matching target/family requirement; historical magnitude/confidence capped by fresh evidence; terminal lifecycle states rejected for direct reactivation.
+
+TDD: valid red was missing volition.conation_bridge; post-implementation full regression was 104/104 passing.
+
+Free-form source text is not parsed into Volition semantics.

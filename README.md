@@ -6,7 +6,7 @@ It is built to make reactive models more proactive without collapsing motivation
 
 `SALIENCE != DRIVE != WANT != CHOICE != GOAL != CONSENT != AUTHORITY != ACTION != PHENOMENOLOGY`
 
-## Foundation V2.7
+## Foundation V2.8
 
 The current work branch implements:
 - eight typed motive families: homeostatic, epistemic, competence, empowerment, open-loop, social, self-model, and protection;
@@ -21,6 +21,7 @@ The current work branch implements:
 - Temporal Watch V1 bridge for canonical UTC chronology, stable event IDs, and event provenance;
 - Temporal-driven engine clock for goal reappraisal and satiation/currentness timing;
 - MESO-CRCT non-executable intent bridge with salience and authority firewalls;
+- append-only lifecycle-history bridge with mandatory fresh-current reappraisal;
 - ARIMA slow-baseline motive forecasts;
 - multivariate Hawkes self-/cross-excitation and inhibition;
 - optional replayable Brownian diffusion and mean-reverting Ornstein-Uhlenbeck diffusion;
@@ -103,6 +104,7 @@ External research includes autotelic goal generation, homeostatic RL, epistemic 
 See:
 - `docs/INTERNAL_SYNTHESIS.md`
 - `docs/MESO_INTEGRATION.md`
+- `docs/CONATION_INTEGRATION.md`
 - `docs/EXTERNAL_RESEARCH.md`
 - `docs/EXTERNAL_PRIOR_ART.md`
 - `docs/TEMPORAL_DYNAMICS.md`
@@ -115,7 +117,7 @@ See:
 
 ## Status
 
-FOUNDATION_V2_7_MESO_INTENT_BRIDGE_IMPLEMENTED_AND_TESTED_ON_WORK_BRANCH
+FOUNDATION_V2_8_HISTORY_CURRENTNESS_BRIDGE_IMPLEMENTED_AND_TESTED_ON_WORK_BRANCH
 
 This does not mean merged to `main`, installed into a runtime, behaviorally qualified in a live agent, or independently reviewed.
 
@@ -174,3 +176,8 @@ The Temporal record's human-readable event text is never used to infer a motive 
 ## V0.9 MESO-CRCT intent bridge
 
 `MesoIntentBridge` accepts MESO-CRCT's non-executable `IntentProposal` contract only. APPROACH maps to open-loop evidence, INSPECT to epistemic evidence, WITHDRAW to protection, and HOLD to no signal. Raw salience is not admitted and bridge output remains `MODEL_GENERATED` evidence rather than Choice or authority. See `docs/MESO_INTEGRATION.md`.
+
+
+## V0.10 Historical currentness bridge
+
+`ConationBridge` admits append-only lifecycle records as historical evidence only. Stored PRESENT labels remain non-current until separately corroborated by a fresh current statement or observation. Reappraised historical strength is capped by the fresh evidence, and terminal or superseded records cannot be silently reactivated. See `docs/CONATION_INTEGRATION.md`.

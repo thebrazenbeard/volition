@@ -251,3 +251,21 @@ BLOCKED. HOLD maps to an empty signal tuple.
 > Structural bridging without a runtime MESO dependency could drift from MESO's real types.
 
 MITIGATED BY EXACT-HEAD CONTRACT TEST. The exact MESO repository at the bound head passes 226/226 tests and its actual canonical IntentProposal objects are exercised directly against the Volition bridge. Future MESO head movement makes that review subject stale until refreshed.
+
+## V0.10 historical-currentness hostile additions
+
+> Stored PRESENT metadata could bypass currentness gating.
+
+BLOCKED. Adapter output defaults to historical provenance with reappraisal disabled.
+
+> Strong historical magnitude could dominate weaker fresh evidence.
+
+BLOCKED. Reappraised historical magnitude and confidence are capped by the fresh signal; same-family arbitration prevents additive amplification.
+
+> Terminal or superseded lifecycle records could be reactivated.
+
+BLOCKED. COMPLETED, REVOKED, CONTRADICTED, and REVISED are rejected for direct reappraisal.
+
+> Source-to-target mapping can still be wrong even when lifecycle gating is correct.
+
+OPEN. The adapter does not infer semantics from source prose. Mapping into a Volition target and drive family remains a separate admission decision requiring qualification before live use.

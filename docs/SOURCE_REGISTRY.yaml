@@ -1,5 +1,5 @@
 schema: VOLITION_SOURCE_REGISTRY_V1
-status: FOUNDATION_V2_7_MESO_INTENT_BRIDGE_IMPLEMENTED_ON_WORK_BRANCH
+status: FOUNDATION_V2_8_HISTORY_CURRENTNESS_BRIDGE_IMPLEMENTED_ON_WORK_BRANCH
 subject:
   repository: thebrazenbeard/volition
   work_branch: work/volition-foundation-20261006
@@ -19,7 +19,7 @@ internal_sources:
     role: promptless_cognition_runtime
   - repository: thebrazenbeard/conations
     head: 51948aac796936f0e7c437722e6f52c883e544e9
-    role: conation_lifecycle_history
+    role: append_only_lifecycle_history_and_currentness_nonpromotion
   - repository: thebrazenbeard/meso-crct
     head: 060d0feeb9dc9eb23801082bd8f1c4a7cb06184d
     role: typed_appraisal_non_executable_intent_protection_and_learning_contract

@@ -1,3 +1,4 @@
+from .conation_bridge import ConationBridge, ConationRecord
 from .diagnostics import (
     MartingaleResidual,
     PoissonNullModel,
@@ -41,6 +42,8 @@ from .temporal import (
 )
 
 __all__ = [
+    "ConationRecord",
+    "ConationBridge",
     "MesoIntentEvidence",
     "MesoIntentBridge",
     "TemporalClockBridge",
