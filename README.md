@@ -6,7 +6,7 @@ It is built to make reactive models more proactive without collapsing motivation
 
 `SALIENCE != DRIVE != WANT != CHOICE != GOAL != CONSENT != AUTHORITY != ACTION != PHENOMENOLOGY`
 
-## Foundation V2.2
+## Foundation V2.3
 
 The current work branch implements:
 - eight typed motive families: homeostatic, epistemic, competence, empowerment, open-loop, social, self-model, and protection;
@@ -21,6 +21,7 @@ The current work branch implements:
 - ARIMA slow-baseline motive forecasts;
 - multivariate Hawkes self-/cross-excitation and inhibition;
 - optional replayable Brownian diffusion and mean-reverting Ornstein-Uhlenbeck diffusion;
+- age-dependent renewal/refractory recurrence hazard;
 - homogeneous Poisson null-model calibration;
 - martingale residual and time-rescaling point-process diagnostics;
 - conservative subcriticality checks against runaway excitation;
@@ -32,7 +33,7 @@ Volition does not use POMDP belief state as its motivational memory substrate.
 
 POMDP latent dynamics are Markov, although a belief state can summarize history. Volition instead keeps motivational dynamics explicit:
 
-`ARIMA slow baseline + optional diffusion + Hawkes event-history excitation/inhibition -> typed Signal -> Want -> Choice -> Goal`
+`ARIMA slow baseline + optional diffusion + renewal/refractory age hazard + Hawkes event-history excitation/inhibition -> typed Signal -> Want -> Choice -> Goal`
 
 That makes recurrence, cross-excitation, decay, and slow drift first-class rather than burying them inside a generic state belief.
 
@@ -93,13 +94,14 @@ The cognition request is a reason to think again. It is not authorization to per
 
 Internal sources include pre-active, conations, MESO-CRCT, Vera, the control plane, empathy, Semantic Atlas, DeepMemory, Selfimage, Temporal, and Project Runner. Sexuality/Orgasm contribute only abstract public-safe mechanisms; intimate material is not copied into Volition.
 
-External research includes autotelic goal generation, homeostatic RL, epistemic value, curiosity/learning progress, BDI separation, Hawkes processes, ARMA/CARMA-Hawkes work, Brownian/SDE-driven Hawkes variants, self-limiting Hawkes models, and ARIMA reference implementations.
+External research includes autotelic goal generation, homeostatic RL, epistemic value, curiosity/learning progress, BDI separation, Hawkes processes, ARMA/CARMA-Hawkes work, Brownian/SDE-driven Hawkes variants, age-dependent and renewal-Hawkes models, self-limiting Hawkes models, and ARIMA reference implementations.
 
 See:
 - `docs/INTERNAL_SYNTHESIS.md`
 - `docs/EXTERNAL_RESEARCH.md`
 - `docs/EXTERNAL_PRIOR_ART.md`
 - `docs/TEMPORAL_DYNAMICS.md`
+- `docs/RENEWAL_DYNAMICS.md`
 - `docs/MODEL_SELECTION.md`
 - `docs/SOURCE_REGISTRY.yaml`
 - `docs/ARCHITECTURE.md`
@@ -107,7 +109,7 @@ See:
 
 ## Status
 
-FOUNDATION_V2_2_DIAGNOSTICS_IMPLEMENTED_AND_TESTED_ON_WORK_BRANCH
+FOUNDATION_V2_3_RENEWAL_IMPLEMENTED_AND_TESTED_ON_WORK_BRANCH
 
 This does not mean merged to `main`, installed into a runtime, behaviorally qualified in a live agent, or independently reviewed.
 
@@ -135,3 +137,10 @@ See `docs/DIAGNOSTICS.md`.
 
 
 V0.4 also exposes `time_rescaled_intervals(...)`, which maps observed event gaps through integrated model intensity. This is the transformation primitive; distributional goodness-of-fit testing remains separate.
+
+
+## V0.5 renewal/refractory dynamics
+
+The temporal stack now optionally models age since the last matching motive event. `RefractoryRenewalHazard` can impose an absolute refractory window and then recover recurrence hazard toward an asymptotic rate.
+
+This recurrence term is separate from Hawkes excitation and from engine-level satiation. See `docs/RENEWAL_DYNAMICS.md`.

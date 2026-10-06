@@ -1,4 +1,4 @@
-﻿# Hostile Review - Foundation V1
+# Hostile Review - Foundation V1
 
 Review class: INTERNAL_HOSTILE_REVIEW
 Subject: work/volition-foundation-20261006
@@ -144,3 +144,26 @@ OPEN / DOCUMENTED. Standard rescaling is retained as evidence, not certification
 > Diagnostic outputs could accidentally feed back into motive generation.
 
 GUARD. Diagnostic objects are not Drive signals and expose no Want, Choice, or Goal mutation API.
+
+
+## Renewal/refractory hostile additions
+
+> Renewal recovery and Hawkes excitation can both explain post-event timing, causing the same history to be counted twice.
+
+OPEN / CALIBRATION REQUIRED. V2.3 exposes `renewal` and `excitation` separately. Combined use must beat Hawkes-only and renewal-only alternatives on held-out timing or likelihood before both components are retained.
+
+> A refractory window could be mistaken for engine-level satiation or satisfaction.
+
+BLOCKED SEMANTICALLY. `RefractoryRenewalHazard` models temporal recurrence after a motive event. `record_satisfaction(...)` remains a separate goal-engine operation with different semantics and effects.
+
+> A large asymptotic renewal base rate could manufacture persistent motive pressure.
+
+MITIGATED BUT NOT SOLVED. Renewal parameters are configuration, not truth. Output remains bounded after conversion to activation and remains subject to provenance, Choice typing, reappraisal, protection, and authority boundaries. Calibration remains required.
+
+> Using only the last event discards older recurrence structure.
+
+ACCEPTED V2.3 LIMIT. The implementation is an age-since-last-event hazard, not a general renewal-distribution estimator or latent immigrant/offspring inference system. More complex renewal history requires separate evidence and tests.
+
+> The first event has no renewal history, yet a recurrence model might silently invent one.
+
+FIXED BY DESIGN. With no prior matching event, the renewal term is zero. Initial occurrence must be supported by other temporal or current evidence.

@@ -217,3 +217,27 @@ Research:
 - Eden-Kramer-Lab/popTRT @ b21a5abcb0f997a8e41c1585065e309dbaa954c4.
 
 No third-party code was copied.
+
+
+## 2026-10-06 - renewal/refractory temporal extension
+
+The next temporal frontier was implemented as an age-dependent recurrence hazard rather than a full renewal-Hawkes estimator.
+
+Design:
+- zero recurrence hazard during an optional absolute refractory interval;
+- exponential recovery toward an asymptotic base rate;
+- age measured from the most recent matching target/drive event;
+- no prior matching event means zero renewal contribution;
+- renewal contribution remains separately inspectable from ARIMA baseline, diffusion, and Hawkes excitation.
+
+TDD evidence:
+- valid red: `RefractoryRenewalHazard` import absent;
+- green focused suite: 9/9 tests;
+- full regression after implementation: 50/50 tests.
+
+Research:
+- Age Dependent Hawkes Process, arXiv:1806.06370;
+- Estimation of the Hawkes Process with Renewal Immigration Using the EM Algorithm, arXiv:1407.7118;
+- Renewal Time Points for Hawkes Processes, arXiv:1906.02036.
+
+No public implementation repository of sufficient relevance/quality was admitted for this unit; the implementation is original and paper-guided.

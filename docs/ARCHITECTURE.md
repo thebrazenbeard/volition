@@ -1,4 +1,4 @@
-# Volition Architecture V2.1
+# Volition Architecture V2.3
 
 ## Purpose
 
@@ -15,7 +15,7 @@ A strong motive changes what is worth considering. It does not enlarge effect au
 `OBSERVATIONS + MOTIVE EVENTS`
 `        |`
 `        v`
-`ARIMA SLOW BASELINE + OPTIONAL DIFFUSION + MULTIVARIATE HAWKES FAST EXCITATION`
+`ARIMA SLOW BASELINE + OPTIONAL DIFFUSION + AGE-DEPENDENT RENEWAL + MULTIVARIATE HAWKES FAST EXCITATION`
 `        |`
 `        v`
 `TYPED SIGNALS -> DRIVE TRANSFORMS -> FAMILY ARBITRATION -> WANT -> CHOICE -> GOAL -> COGNITION REQUEST`
@@ -24,23 +24,23 @@ External action systems remain beyond a separate authority gate that Volition do
 
 ## 1. Temporal motive dynamics
 
-Volition uses a decomposed temporal model with slow forecast, optional stochastic deviation, and event-history effects.
+Volition uses a decomposed temporal model with slow forecast, optional stochastic deviation, age-dependent recurrence, and event-history effects.
 
 ARIMA represents the slower expected baseline for a target/drive stream: trend, autoregressive persistence, differencing, and moving-average residual effects.
 
 Optional diffusion represents continuous stochastic deviation around the slow forecast. Brownian motion is available as a replayable primitive; Ornstein-Uhlenbeck is the preferred mean-reverting form.
 
-Hawkes dynamics represent event-history effects: a motive event can transiently self-excite, cross-excite, or inhibit another motive family. With exponential kernels, V2.1 computes
+Hawkes dynamics represent event-history effects: a motive event can transiently self-excite, cross-excite, or inhibit another motive family. With exponential kernels, V2.3 computes
 
-`lambda_k(t) = max(0, mu_k(t) + D_k(t) + sum_e alpha[j->k] * w_e * exp(-beta[j->k] * (t - t_e)))`
+`lambda_k(t) = max(0, mu_k(t) + D_k(t) + R_k(age_k(t)) + sum_e alpha[j->k] * w_e * exp(-beta[j->k] * (t - t_e)))`
 
-where `mu_k(t)` is the ARIMA baseline forecast and `D_k(t)` is an optional diffusion state.
+where `mu_k(t)` is the ARIMA baseline forecast, `D_k(t)` is optional diffusion state, and `R_k(age_k(t))` is optional renewal/refractory recurrence based on time since the last matching event.
 
 The bounded activation sent into the ordinary drive engine is
 
 `activation = 1 - exp(-lambda)`.
 
-The ARIMA baseline, diffusion deviation, and Hawkes excitation components remain separately inspectable; they are not collapsed into an opaque reward.
+The ARIMA baseline, diffusion deviation, renewal recurrence, and Hawkes excitation components remain separately inspectable; they are not collapsed into an opaque reward.
 
 ### Why not POMDP as the memory substrate?
 

@@ -153,6 +153,32 @@ DiffusionProcess = BrownianMotion | OrnsteinUhlenbeck
 
 
 @dataclass(frozen=True, slots=True)
+class RefractoryRenewalHazard:
+    """Age-dependent recurrence hazard with refractory recovery."""
+
+    base_rate: float
+    refractory_seconds: float = 0.0
+    recovery_rate: float = 1.0
+
+    def __post_init__(self) -> None:
+        if self.base_rate < 0:
+            raise ValueError("renewal base_rate must be non-negative")
+        if self.refractory_seconds < 0:
+            raise ValueError("refractory_seconds must be non-negative")
+        if self.recovery_rate <= 0:
+            raise ValueError("recovery_rate must be positive")
+
+    def hazard(self, age_seconds: float) -> float:
+        age_seconds = float(age_seconds)
+        if age_seconds < 0:
+            raise ValueError("age_seconds must be non-negative")
+        if age_seconds <= self.refractory_seconds:
+            return 0.0
+        effective_age = age_seconds - self.refractory_seconds
+        return self.base_rate * (1.0 - exp(-self.recovery_rate * effective_age))
+
+
+@dataclass(frozen=True, slots=True)
 class HawkesKernel:
     source_kind: DriveKind
     target_kind: DriveKind
@@ -180,6 +206,8 @@ class TemporalIntensity:
     arima_baseline: float
     diffusion: float
     baseline: float
+    renewal: float
+    renewal_age_seconds: float | None
     excitation: float
     total: float
     activation: float
@@ -205,6 +233,7 @@ class MotiveTemporalModel:
         self.stability_limit = float(stability_limit)
         self._baselines: dict[tuple[str, DriveKind], ARIMABaseline] = {}
         self._diffusions: dict[tuple[str, DriveKind], DiffusionProcess] = {}
+        self._renewal_hazards: dict[tuple[str, DriveKind], RefractoryRenewalHazard] = {}
         self._events: list[MotiveEvent] = []
         self._validate_subcritical()
 
@@ -275,6 +304,21 @@ class MotiveTemporalModel:
             raise ValueError("no diffusion configured for target/drive")
         return diffusion.advance(seconds, innovation=innovation)
 
+    def set_renewal_hazard(
+        self,
+        target: str,
+        kind: DriveKind,
+        hazard: RefractoryRenewalHazard,
+    ) -> None:
+        self._renewal_hazards[(target, kind)] = hazard
+
+    def renewal_hazard(
+        self,
+        target: str,
+        kind: DriveKind,
+    ) -> RefractoryRenewalHazard | None:
+        return self._renewal_hazards.get((target, kind))
+
     def observe_event(
         self,
         target: str,
@@ -317,6 +361,21 @@ class MotiveTemporalModel:
         )
         baseline = max(0.0, arima_baseline + diffusion_value)
 
+        renewal_model = self._renewal_hazards.get(key)
+        renewal_age_seconds: float | None = None
+        renewal_value = 0.0
+        if renewal_model is not None:
+            prior_times = [
+                event.at_seconds
+                for event in self._events
+                if event.target == target
+                and event.kind is kind
+                and event.at_seconds <= at_seconds
+            ]
+            if prior_times:
+                renewal_age_seconds = at_seconds - max(prior_times)
+                renewal_value = renewal_model.hazard(renewal_age_seconds)
+
         excitation = 0.0
         for kernel in self.kernels:
             if kernel.target_kind is not kind:
@@ -333,7 +392,7 @@ class MotiveTemporalModel:
                     * exp(-kernel.beta * elapsed)
                 )
 
-        total = max(0.0, baseline + excitation)
+        total = max(0.0, baseline + renewal_value + excitation)
         activation = 1.0 - exp(-total)
         return TemporalIntensity(
             target=target,
@@ -342,6 +401,8 @@ class MotiveTemporalModel:
             arima_baseline=arima_baseline,
             diffusion=diffusion_value,
             baseline=baseline,
+            renewal=renewal_value,
+            renewal_age_seconds=renewal_age_seconds,
             excitation=excitation,
             total=total,
             activation=activation,
@@ -356,11 +417,11 @@ class MotiveTemporalModel:
         confidence: float = 1.0,
     ) -> Signal:
         result = self.intensity(target, kind, at_seconds=at_seconds)
-        source = (
-            "temporal:hawkes-arima-diffusion"
-            if (target, kind) in self._diffusions
-            else "temporal:hawkes-arima"
-        )
+        source = "temporal:hawkes-arima"
+        if (target, kind) in self._diffusions:
+            source += "-diffusion"
+        if (target, kind) in self._renewal_hazards:
+            source += "-renewal"
         return Signal(
             target=target,
             kind=kind,

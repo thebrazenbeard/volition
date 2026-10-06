@@ -184,7 +184,7 @@ Volition use:
 
 Martingales do not generate wants.
 
-Next engineering candidate:
+Implemented:
 - compensator and time-rescaling diagnostics, with signed-inhibition/clamped-intensity handling explicit.
 
 ## Time-series family
@@ -255,10 +255,12 @@ IMPLEMENTED DIAGNOSTICS:
 2. martingale compensator residuals.
 3. time-rescaled inter-event intervals.
 
+IMPLEMENTED TEMPORAL EXTENSION:
+1. age-dependent renewal/refractory hazard.
+
 NEXT HIGH-VALUE:
-1. renewal/refractory hazard.
-2. ARIMAX for verified exogenous context.
-3. SARIMA if empirical seasonality appears.
+1. ARIMAX for verified exogenous context.
+2. SARIMA if empirical seasonality appears.
 
 CONDITIONAL:
 1. VAR for slow cross-drive coupling.
@@ -291,10 +293,11 @@ The following items previously listed under NEXT HIGH-VALUE are now implemented:
 - martingale/compensator residual diagnostics.
 
 Still next:
-- time-rescaling transformed inter-arrival diagnostics;
-- renewal/refractory hazard;
+- distributional validation of time-rescaled intervals;
 - ARIMAX when verified exogenous predictors exist;
 - SARIMA when empirical seasonality exists.
+
+Renewal/refractory hazard is implemented in V0.5.
 
 
 Time-rescaled compensator intervals are now implemented. The remaining diagnostics frontier is distributional validation of those intervals (for example exponentiality/uniform-transform checks and dependence tests), not interval construction itself.

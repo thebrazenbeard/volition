@@ -1,5 +1,5 @@
 schema: VOLITION_SOURCE_REGISTRY_V1
-status: FOUNDATION_V2_2_DIAGNOSTICS_IMPLEMENTED_ON_WORK_BRANCH
+status: FOUNDATION_V2_3_RENEWAL_IMPLEMENTED_ON_WORK_BRANCH
 subject:
   repository: thebrazenbeard/volition
   work_branch: work/volition-foundation-20261006
@@ -151,3 +151,14 @@ time_rescaling_academic_sources:
   - locator: DOI:10.1080/02664763.2025.2459245
     title: On the use and misuse of time-rescaling to assess the goodness-of-fit of self-exciting temporal point processes
     role: predictive_time_rescaling_bias_warning
+
+renewal_academic_sources:
+  - locator: arXiv:1806.06370
+    title: Age Dependent Hawkes Process
+    role: refractory_recovery_age_dependent_hawkes
+  - locator: arXiv:1407.7118
+    title: Estimation of the Hawkes Process with Renewal Immigration Using the EM Algorithm
+    role: renewal_immigration_separated_from_hawkes_offspring
+  - locator: arXiv:1906.02036
+    title: Renewal Time Points for Hawkes Processes
+    role: renewal_structure_for_ordinary_and_age_dependent_hawkes

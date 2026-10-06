@@ -25,6 +25,7 @@ from .temporal import (
     MotiveEvent,
     MotiveTemporalModel,
     OrnsteinUhlenbeck,
+    RefractoryRenewalHazard,
     TemporalIntensity,
 )
 
@@ -45,6 +46,7 @@ __all__ = [
     "PoissonNullModel",
     "Policy",
     "ProvenanceClass",
+    "RefractoryRenewalHazard",
     "STATE_SCHEMA",
     "Signal",
     "TemporalIntensity",
