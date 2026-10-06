@@ -6,7 +6,7 @@ It is built to make reactive models more proactive without collapsing motivation
 
 `SALIENCE != DRIVE != WANT != CHOICE != GOAL != CONSENT != AUTHORITY != ACTION != PHENOMENOLOGY`
 
-## Foundation V2.8
+## Foundation V2.9
 
 The current work branch implements:
 - eight typed motive families: homeostatic, epistemic, competence, empowerment, open-loop, social, self-model, and protection;
@@ -16,6 +16,7 @@ The current work branch implements:
 - explicit Choice records distinguishing SELF_AUTHORED, USER_DIRECTED, POLICY_DERIVED, and MODEL_PROPOSED;
 - goal hysteresis, satiation/recovery, and periodic current reappraisal;
 - bounded ENDOGENOUS cognition requests;
+- Pre-Active reserved-tool re-entry proposal bridge preserving runtime capability, budget, and authority gates;
 - `VOLITION_STATE_V2` snapshot/restore with choice provenance;
 - ordered transition receipts;
 - Temporal Watch V1 bridge for canonical UTC chronology, stable event IDs, and event provenance;
@@ -105,6 +106,7 @@ See:
 - `docs/INTERNAL_SYNTHESIS.md`
 - `docs/MESO_INTEGRATION.md`
 - `docs/CONATION_INTEGRATION.md`
+- `docs/PREACTIVE_INTEGRATION.md`
 - `docs/EXTERNAL_RESEARCH.md`
 - `docs/EXTERNAL_PRIOR_ART.md`
 - `docs/TEMPORAL_DYNAMICS.md`
@@ -117,7 +119,7 @@ See:
 
 ## Status
 
-FOUNDATION_V2_8_HISTORY_CURRENTNESS_BRIDGE_IMPLEMENTED_AND_TESTED_ON_WORK_BRANCH
+FOUNDATION_V2_9_PREACTIVE_REENTRY_BRIDGE_IMPLEMENTED_AND_TESTED_ON_WORK_BRANCH
 
 This does not mean merged to `main`, installed into a runtime, behaviorally qualified in a live agent, or independently reviewed.
 
@@ -181,3 +183,8 @@ The Temporal record's human-readable event text is never used to infer a motive 
 ## V0.10 Historical currentness bridge
 
 `ConationBridge` admits append-only lifecycle records as historical evidence only. Stored PRESENT labels remain non-current until separately corroborated by a fresh current statement or observation. Reappraised historical strength is capped by the fresh evidence, and terminal or superseded records cannot be silently reactivated. See `docs/CONATION_INTEGRATION.md`.
+
+
+## V0.11 Pre-Active re-entry bridge
+
+`PreActiveCognitionBridge` converts a bounded ENDOGENOUS `CognitionRequest` into a non-dispatching proposal for Pre-Active's reserved `pre_active.request_turn` primitive. It preserves goal/target/urgency as reason evidence but grants no capabilities, scheduling receipt, run identity, or effect authority. See `docs/PREACTIVE_INTEGRATION.md`.

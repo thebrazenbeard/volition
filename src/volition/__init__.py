@@ -1,3 +1,4 @@
+from .preactive_bridge import PreActiveCognitionBridge, PreActiveReentryProposal
 from .conation_bridge import ConationBridge, ConationRecord
 from .diagnostics import (
     MartingaleResidual,
@@ -42,6 +43,8 @@ from .temporal import (
 )
 
 __all__ = [
+    "PreActiveReentryProposal",
+    "PreActiveCognitionBridge",
     "ConationRecord",
     "ConationBridge",
     "MesoIntentEvidence",

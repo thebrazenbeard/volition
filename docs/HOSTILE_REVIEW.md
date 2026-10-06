@@ -269,3 +269,33 @@ BLOCKED. COMPLETED, REVOKED, CONTRADICTED, and REVISED are rejected for direct r
 > Source-to-target mapping can still be wrong even when lifecycle gating is correct.
 
 OPEN. The adapter does not infer semantics from source prose. Mapping into a Volition target and drive family remains a separate admission decision requiring qualification before live use.
+
+## Pre-Active re-entry bridge hostile additions
+
+> A motive-generated request for another turn could be mistaken for permission to act.
+
+BLOCKED. The bridge emits only a non-dispatching proposal for `pre_active.request_turn`; it carries no effect authority and adds no capabilities.
+
+> Urgency could silently become queue priority or capability scope.
+
+BLOCKED BY DESIGN. Urgency is retained as descriptive evidence only. The proposal exposes no priority mapping and its capability tuple is always empty.
+
+> Volition could bypass Pre-Active's autonomous-turn limits and create recursive self-stimulation.
+
+BLOCKED BY ARCHITECTURE. Pre-Active retains the per-run autonomous-turn budget and consecutive ENDOGENOUS-depth limit. The bridge cannot schedule itself.
+
+> Calling a host queue API directly could manufacture a new run rather than preserve current run identity.
+
+AVOIDED. V0.11 does not call `Store.request_autonomous_turn(...)` or any queue API. It targets the reserved same-run re-entry primitive.
+
+> A bridge could impersonate successful scheduling by inventing run IDs, event IDs, or receipts.
+
+BLOCKED. `PreActiveReentryProposal` contains none of those identifiers and explicitly reports `scheduled=False`.
+
+> Volition and Pre-Active both use Hawkes-like machinery, so one intensity could be treated as the other.
+
+SEPARATED. Volition Hawkes models motive-event history. Pre-Active Hawkes threshold models whether authorized observed change warrants a turn. No state, parameters, or score are transferred automatically.
+
+> A stale Pre-Active contract could make the bridge compatible only with an obsolete runtime.
+
+MITIGATED. Live refresh retired the prior registry head. V0.11 binds exact current head `a6900dc2d2fb65f4ea66db95fca1b9c5b022450b` and cross-tests its real parser and durable Store path.

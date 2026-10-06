@@ -356,3 +356,37 @@ Implemented: historical provenance by default; separate fresh-current corroborat
 TDD: valid red was missing volition.conation_bridge; post-implementation full regression was 104/104 passing.
 
 Free-form source text is not parsed into Volition semantics.
+
+## 2026-10-06 - Pre-Active bounded cognition re-entry bridge
+
+Live refresh retired the previous Volition Pre-Active pin `94cb3b8044d7a4263c50a96bfecfcfebc5533716`. V0.11 binds current `thebrazenbeard/pre-active@a6900dc2d2fb65f4ea66db95fca1b9c5b022450b`, which includes durable observers and temporal initiative models.
+
+Reviewed exact-head contracts:
+- `README.md` and `docs/AUTONOMOUS_RUNTIME.md`;
+- reserved `pre_active.request_turn` primitive in `src/pre_active/engine.py`;
+- same-run autonomous deferral in `src/pre_active/store.py`;
+- current Hawkes-threshold initiative policy in `src/pre_active/initiative.py`.
+
+Bridge contract:
+- only ENDOGENOUS `CognitionRequest` objects are admitted;
+- `effect_authority` must remain false;
+- output is a non-dispatching proposal for the reserved re-entry tool;
+- arguments contain bounded `reason` and finite non-negative `delay_seconds` only;
+- no capability, run/event/request ID, queue priority, or scheduling receipt is manufactured;
+- urgency remains descriptive evidence and cannot become authority.
+
+TDD evidence:
+- valid red: `volition.preactive_bridge` absent;
+- focused green: 13/13 tests.
+
+Cross-repository verification against exact Pre-Active head:
+- the exact-head Pre-Active suite completed without failure;
+- proposal tool name and arguments matched the actual reserved-tool contract;
+- Pre-Active's own parser accepted the arguments unchanged;
+- reserved tool capability remained `pre_active.internal.autonomy` and `mutation=False`;
+- Pre-Active's own Store moved a durable test run `RUNNING -> WAITING`;
+- original capabilities `{files.read, github.read}` remained unchanged;
+- autonomous-turn count incremented;
+- successor `run.step` retained the same run ID and source `ENDOGENOUS`.
+
+The Pre-Active Hawkes threshold remains a host initiative/wake policy. It is not imported as Volition motive intensity.

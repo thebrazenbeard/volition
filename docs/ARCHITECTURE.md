@@ -160,7 +160,9 @@ This is sufficient but not necessary; it is deliberately stricter than a full sp
 
 ### pre-active
 
-Volition may propose an endogenous cognition request. pre-active decides whether a model turn is admitted.
+Volition may propose an endogenous cognition request. V0.11 binds that proposal to current Pre-Active's reserved `pre_active.request_turn` contract without dispatching it. The bridge passes only a bounded reason and non-negative delay. Pre-Active remains authoritative for durable run identity, existing capability set, autonomous-turn budget, consecutive endogenous-depth limit, pause/cancel state, and whether another model turn is admitted.
+
+`COGNITION_REQUEST != TURN_GRANTED != CAPABILITY_GRANTED != EFFECT_AUTHORITY`.
 
 ### conations / memory
 
