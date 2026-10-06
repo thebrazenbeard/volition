@@ -37,3 +37,19 @@ Additional likely inputs:
 
 Their role is not assumed from names. Each contribution will be admitted only after exact-head inspection.
 
+
+## 2026-10-06 - external research pass
+
+External research was admitted as design evidence, not copied implementation.
+
+Findings:
+- autotelic agents motivate explicit self-generated goal representation and selection;
+- homeostatic RL motivates deficit/setpoint drives and anticipatory regulation;
+- active inference motivates a distinct epistemic/information-value drive;
+- curiosity research motivates reducible prediction-error exploration, with noise traps treated as failures;
+- learning-progress approaches motivate competence gains rather than raw novelty/difficulty;
+- BDI motivates a hard desire-versus-intention distinction;
+- empowerment motivates bounded option-preservation, never unauthorized capability acquisition.
+
+See docs/EXTERNAL_RESEARCH.md for sources, limits, and hostile challenges.
+

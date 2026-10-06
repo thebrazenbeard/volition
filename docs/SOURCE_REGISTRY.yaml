@@ -53,5 +53,23 @@ internal_sources:
   - repository: thebrazenbeard/project-runner
     head: 04702abbf51aa2920b7d054275619253ea6fa748
     role: bounded_governed_execution
-external_sources: []
+external_sources:
+  - repository: infer-actively/pymdp
+    head: fb214bf089fc3eba63c157349209f3fa217739a4
+    role: epistemic_value_active_inference
+    transfer: RESEARCH_MECHANISM_ONLY
+  - repository: openai/random-network-distillation
+    head: f75c0f1efa473d5109d487062fd8ed49ddce6634
+    role: novelty_prediction_error
+    transfer: RESEARCH_MECHANISM_ONLY
+    status: ARCHIVED
+  - repository: MineDojo/Voyager
+    head: 55e45a880755d0c8c66ca7fb5fe7962ac8974f89
+    role: automatic_curriculum_competence_feedback
+    transfer: RESEARCH_MECHANISM_ONLY
+  - repository: letta-ai/letta-code
+    head: 4b028fab07c69edaac2ddb4f7b9a43573ff20d81
+    role: persistent_agent_state_and_schedules
+    transfer: RESEARCH_MECHANISM_ONLY
+
 
