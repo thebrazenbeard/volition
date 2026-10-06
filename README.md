@@ -6,7 +6,7 @@ It is built to make reactive models more proactive without collapsing motivation
 
 `SALIENCE != DRIVE != WANT != CHOICE != GOAL != CONSENT != AUTHORITY != ACTION != PHENOMENOLOGY`
 
-## Foundation V2.5
+## Foundation V2.6
 
 The current work branch implements:
 - eight typed motive families: homeostatic, epistemic, competence, empowerment, open-loop, social, self-model, and protection;
@@ -19,6 +19,7 @@ The current work branch implements:
 - `VOLITION_STATE_V2` snapshot/restore with choice provenance;
 - ordered transition receipts;
 - Temporal Watch V1 bridge for canonical UTC chronology, stable event IDs, and event provenance;
+- Temporal-driven engine clock for goal reappraisal and satiation/currentness timing;
 - ARIMA slow-baseline motive forecasts;
 - multivariate Hawkes self-/cross-excitation and inhibition;
 - optional replayable Brownian diffusion and mean-reverting Ornstein-Uhlenbeck diffusion;
@@ -112,7 +113,7 @@ See:
 
 ## Status
 
-FOUNDATION_V2_5_TEMPORAL_BRIDGE_IMPLEMENTED_AND_TESTED_ON_WORK_BRANCH
+FOUNDATION_V2_6_TEMPORAL_CLOCK_IMPLEMENTED_AND_TESTED_ON_WORK_BRANCH
 
 This does not mean merged to `main`, installed into a runtime, behaviorally qualified in a live agent, or independently reviewed.
 
@@ -161,3 +162,8 @@ No p-value is manufactured. These are screening statistics and remain diagnostic
 Volition now consumes Temporal Watch V1 records through `TemporalEventBridge`. Canonical UTC timestamps are converted to the model's non-negative relative-time axis, while stable Temporal IDs/source/refs remain attached to each `MotiveEvent`.
 
 The Temporal record's human-readable event text is never used to infer a motive target or drive. See `docs/TEMPORAL_INTEGRATION.md`.
+
+
+## V0.8 Temporal currentness clock
+
+`TemporalClockBridge` advances `VolitionEngine` logical time to a canonical Temporal UTC timestamp without maintaining a second hidden clock. The engine exposes read-only `elapsed_seconds`; clock rewinds fail closed. Goal reappraisal horizons and satiation decay can therefore use the same canonical chronology as Temporal motive events.

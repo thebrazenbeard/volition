@@ -207,3 +207,21 @@ FAIL-CLOSED. Events before the Volition anchor are rejected. The bridge never si
 > Stable chronology can still be attached to the wrong motive semantics by a caller.
 
 OPEN / AUTHORITY BOUNDARY. The bridge deliberately does not infer semantics. Explicit target/DriveKind mapping remains a separate admission decision and requires its own provenance/qualification.
+
+## Temporal currentness-clock hostile additions
+
+> A second clock adapter could drift away from the engine's own logical clock.
+
+BLOCKED BY DESIGN. `TemporalClockBridge` stores no independent elapsed counter. It reads `engine.elapsed_seconds`, computes the canonical target from `TemporalAnchor`, and advances only the delta.
+
+> A stale or out-of-order timestamp could rewind goal age and resurrect pre-reappraisal state.
+
+FAIL-CLOSED. Any target time earlier than current engine elapsed time is rejected.
+
+> Canonical chronology could be mistaken for semantic currentness.
+
+BLOCKED SEMANTICALLY. Temporal time determines age/horizon arithmetic only. Whether evidence is current, admissible, autobiographical, desired, or authoritative remains a separate Volition/source-policy decision.
+
+> Reappraisal timing driven by an external record could itself grant permission to act.
+
+REJECTED. Clock advancement can cause an already-defined reappraisal rule to run on the next engine tick; it cannot create effect authority or bypass Choice/protection boundaries.

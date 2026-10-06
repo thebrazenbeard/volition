@@ -23,6 +23,7 @@ from .models import (
 )
 from .temporal_bridge import (
     TemporalAnchor,
+    TemporalClockBridge,
     TemporalEventBridge,
     TemporalRecord,
     canonical_temporal_timestamp,
@@ -39,6 +40,7 @@ from .temporal import (
 )
 
 __all__ = [
+    "TemporalClockBridge",
     "canonical_temporal_timestamp",
     "TemporalRecord",
     "TemporalEventBridge",

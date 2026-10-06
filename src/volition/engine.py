@@ -50,6 +50,10 @@ class VolitionEngine:
         self._events: list[TransitionEvent] = []
 
     @property
+    def elapsed_seconds(self) -> float:
+        return self._elapsed_seconds
+
+    @property
     def active_goal(self) -> Goal | None:
         return self._active_goal
 

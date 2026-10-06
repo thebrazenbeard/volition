@@ -77,3 +77,22 @@ An exact checkout of `thebrazenbeard/temporal` at `0fc7071a6b01e609fb2cdc76a32c7
 - a second ingestion of the same Temporal stable ID was rejected.
 
 This is a real cross-repository compatibility probe. It is not evidence of live Vera runtime installation or consumption.
+
+
+## Engine currentness clock
+
+V0.8 adds `TemporalClockBridge`. Given the same `TemporalAnchor`, it converts a canonical UTC timestamp to target elapsed seconds and advances `VolitionEngine` by only the required positive delta.
+
+The engine exposes `elapsed_seconds` as read-only state. If a requested Temporal timestamp maps earlier than the engine's current logical time, synchronization fails closed rather than rewinding goal age, satiation decay, or reappraisal history.
+
+This means Temporal can drive both sides of Volition chronology:
+- `TemporalEventBridge` timestamps motive events for Hawkes/renewal dynamics;
+- `TemporalClockBridge` advances goal/currentness time for the Volition engine.
+
+Neither bridge interprets Temporal event text or grants effect authority.
+
+V0.8 cross-repository currentness probe:
+- Temporal exact-head `append_event` produced canonical records at `2026-10-06T14:00:05Z` and `2026-10-06T14:00:16Z` from offset-aware inputs;
+- `TemporalClockBridge` adopted a goal at elapsed `5.0` seconds;
+- the second Temporal timestamp advanced the same engine to `16.0` seconds and triggered due reappraisal on the next tick;
+- goal revision advanced from established initial revision 1 to revision 2.

@@ -1,4 +1,4 @@
-# Volition Architecture V2.5
+# Volition Architecture V2.6
 
 ## Purpose
 
@@ -172,7 +172,7 @@ Volition adopts MESO-CRCT's separation among salience, appraisal, tendency, inte
 
 ### Temporal
 
-`thebrazenbeard/temporal` supplies chronology only. V0.7 binds Temporal Watch V1 canonical UTC timestamps, stable IDs, source labels, and refs through `TemporalEventBridge`. `TemporalAnchor` converts canonical absolute time to Volition-relative non-negative seconds.
+`thebrazenbeard/temporal` supplies chronology only. V0.7 binds Temporal Watch V1 canonical UTC timestamps, stable IDs, source labels, and refs through `TemporalEventBridge`. `TemporalAnchor` converts canonical absolute time to Volition-relative non-negative seconds. V0.8 adds `TemporalClockBridge`, which monotonically advances `VolitionEngine` logical time to the same canonical axis for goal reappraisal, satiation decay, and currentness horizons.
 
 The bridge preserves Temporal's `clock before semantics` rule: event text is not interpreted as target, drive, truth, currentness, memory, consent, or authority. Volition semantics must be supplied explicitly by the caller.
 

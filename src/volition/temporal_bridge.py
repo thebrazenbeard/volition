@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Iterable, Mapping
 
+from .engine import VolitionEngine
 from .models import DriveKind
 from .temporal import MotiveEvent, MotiveTemporalModel
 
@@ -183,3 +184,22 @@ class TemporalEventBridge:
             )
             for record in parsed
         )
+
+
+class TemporalClockBridge:
+    """Synchronize VolitionEngine logical time to canonical Temporal time."""
+
+    def __init__(self, anchor: TemporalAnchor) -> None:
+        self.anchor = anchor
+
+    def advance_engine_to(
+        self,
+        engine: VolitionEngine,
+        timestamp: str,
+    ) -> float:
+        target_seconds = self.anchor.seconds_for(timestamp)
+        current_seconds = engine.elapsed_seconds
+        if target_seconds < current_seconds:
+            raise ValueError("Temporal clock cannot rewind VolitionEngine")
+        engine.advance(target_seconds - current_seconds)
+        return engine.elapsed_seconds

@@ -292,3 +292,27 @@ Cross-repository verification against the actual Temporal exact-head implementat
 - offset input canonicalized by Temporal to UTC Z;
 - Volition relative-time conversion returned exactly 5.0 seconds from the configured anchor;
 - duplicate stable ID rejected on re-ingestion.
+
+## 2026-10-06 - Temporal-driven engine currentness clock
+
+V0.8 extends Temporal integration from motive-event chronology to `VolitionEngine` logical time.
+
+Contract:
+- `VolitionEngine.elapsed_seconds` is read-only;
+- `TemporalClockBridge` maps canonical Temporal UTC timestamps through the existing `TemporalAnchor`;
+- engine time advances only by the positive delta to the requested canonical timestamp;
+- rewinds fail closed;
+- goal adoption/reappraisal timestamps therefore share the same relative chronology as Temporal motive events;
+- satiation decay uses the same elapsed-time advancement.
+
+TDD evidence:
+- valid red: `TemporalClockBridge` import absent;
+- one initial test assertion incorrectly expected new Goal revision 0; source inspection showed the established schema begins at revision 1, so the test was corrected rather than production behavior being altered;
+- focused green after correction: 5/5 tests;
+- full regression after implementation: 70/70 tests.
+
+V0.8 cross-repository currentness probe:
+- Temporal exact-head `append_event` produced canonical records at `2026-10-06T14:00:05Z` and `2026-10-06T14:00:16Z` from offset-aware inputs;
+- `TemporalClockBridge` adopted a goal at elapsed `5.0` seconds;
+- the second Temporal timestamp advanced the same engine to `16.0` seconds and triggered due reappraisal on the next tick;
+- goal revision advanced from established initial revision 1 to revision 2.
