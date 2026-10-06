@@ -76,3 +76,12 @@ class CognitionRequest:
     source: str = "ENDOGENOUS"
     effect_authority: bool = False
 
+
+@dataclass(frozen=True, slots=True)
+class TransitionEvent:
+    sequence: int
+    kind: str
+    target: str
+    at_seconds: float
+    details: tuple[tuple[str, str], ...] = ()
+    effect_authority: bool = False
