@@ -225,3 +225,29 @@ BLOCKED SEMANTICALLY. Temporal time determines age/horizon arithmetic only. Whet
 > Reappraisal timing driven by an external record could itself grant permission to act.
 
 REJECTED. Clock advancement can cause an already-defined reappraisal rule to run on the next engine tick; it cannot create effect authority or bypass Choice/protection boundaries.
+
+## MESO-CRCT bridge hostile additions
+
+> Raw salience or semantic relevance could be relabeled as desire at the integration boundary.
+
+BLOCKED. `MesoIntentBridge` requires the downstream IntentProposal field contract. Salience-only mappings fail validation.
+
+> A MESO intent could silently become self-authored Volition Choice.
+
+BLOCKED. Bridge output is `MODEL_GENERATED` Signal evidence only. It never creates `ChoiceRecord`, and therefore cannot label anything SELF_AUTHORED.
+
+> A future MESO proposal with execution authority could smuggle protected-effect permission into Volition.
+
+FAIL-CLOSED. `effect_authorized` must be exactly false and `can_execute` must be exactly false.
+
+> Withdrawal could be encoded as negative pleasure and conflate protection with suffering.
+
+BLOCKED. WITHDRAW maps to Volition PROTECTION. No hedonic/pleasure signal is synthesized.
+
+> HOLD could still generate low-grade motivational pressure.
+
+BLOCKED. HOLD maps to an empty signal tuple.
+
+> Structural bridging without a runtime MESO dependency could drift from MESO's real types.
+
+MITIGATED BY EXACT-HEAD CONTRACT TEST. The exact MESO repository at the bound head passes 226/226 tests and its actual canonical IntentProposal objects are exercised directly against the Volition bridge. Future MESO head movement makes that review subject stale until refreshed.

@@ -316,3 +316,32 @@ V0.8 cross-repository currentness probe:
 - `TemporalClockBridge` adopted a goal at elapsed `5.0` seconds;
 - the second Temporal timestamp advanced the same engine to `16.0` seconds and triggered due reappraisal on the next tick;
 - goal revision advanced from established initial revision 1 to revision 2.
+
+## 2026-10-06 - MESO-CRCT non-executable intent bridge
+
+Live source refresh confirmed `thebrazenbeard/meso-crct` exact head `060d0feeb9dc9eb23801082bd8f1c4a7cb06184d`, matching Volition's bound revision.
+
+Reviewed exact-head typed seams include canonical appraisal, arbitration/selection, action tendency, non-executable intent, event identity, and provenance.
+
+Design decision:
+- raw perceptual salience, semantic relevance, attention, and pleasure are not imported as Volition desire;
+- the bridge consumes only MESO `IntentProposal` shape;
+- APPROACH -> OPEN_LOOP MODEL_GENERATED evidence;
+- INSPECT -> EPISTEMIC MODEL_GENERATED evidence;
+- WITHDRAW -> PROTECTION MODEL_GENERATED evidence;
+- HOLD -> no motive signal;
+- any effect-authorized or executable input fails closed;
+- bridge output does not create Choice or Goal.
+
+TDD evidence:
+- valid red: `volition.meso_bridge` absent;
+- focused green: 12/12 tests;
+- full Volition regression after implementation: 82/82 tests.
+
+Cross-repository evidence:
+- MESO exact-head suite: 226/226 tests;
+- actual MESO canonical decision cycle generated APPROACH, WITHDRAW, and HOLD IntentProposal objects;
+- Volition consumed those exact objects through the bridge;
+- approach evidence yielded an eligible Want without creating Choice/Goal;
+- protective withdrawal yielded the normal Volition protection veto;
+- hold yielded no signal.

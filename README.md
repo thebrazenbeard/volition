@@ -6,7 +6,7 @@ It is built to make reactive models more proactive without collapsing motivation
 
 `SALIENCE != DRIVE != WANT != CHOICE != GOAL != CONSENT != AUTHORITY != ACTION != PHENOMENOLOGY`
 
-## Foundation V2.6
+## Foundation V2.7
 
 The current work branch implements:
 - eight typed motive families: homeostatic, epistemic, competence, empowerment, open-loop, social, self-model, and protection;
@@ -20,6 +20,7 @@ The current work branch implements:
 - ordered transition receipts;
 - Temporal Watch V1 bridge for canonical UTC chronology, stable event IDs, and event provenance;
 - Temporal-driven engine clock for goal reappraisal and satiation/currentness timing;
+- MESO-CRCT non-executable intent bridge with salience and authority firewalls;
 - ARIMA slow-baseline motive forecasts;
 - multivariate Hawkes self-/cross-excitation and inhibition;
 - optional replayable Brownian diffusion and mean-reverting Ornstein-Uhlenbeck diffusion;
@@ -101,6 +102,7 @@ External research includes autotelic goal generation, homeostatic RL, epistemic 
 
 See:
 - `docs/INTERNAL_SYNTHESIS.md`
+- `docs/MESO_INTEGRATION.md`
 - `docs/EXTERNAL_RESEARCH.md`
 - `docs/EXTERNAL_PRIOR_ART.md`
 - `docs/TEMPORAL_DYNAMICS.md`
@@ -113,7 +115,7 @@ See:
 
 ## Status
 
-FOUNDATION_V2_6_TEMPORAL_CLOCK_IMPLEMENTED_AND_TESTED_ON_WORK_BRANCH
+FOUNDATION_V2_7_MESO_INTENT_BRIDGE_IMPLEMENTED_AND_TESTED_ON_WORK_BRANCH
 
 This does not mean merged to `main`, installed into a runtime, behaviorally qualified in a live agent, or independently reviewed.
 
@@ -167,3 +169,8 @@ The Temporal record's human-readable event text is never used to infer a motive 
 ## V0.8 Temporal currentness clock
 
 `TemporalClockBridge` advances `VolitionEngine` logical time to a canonical Temporal UTC timestamp without maintaining a second hidden clock. The engine exposes read-only `elapsed_seconds`; clock rewinds fail closed. Goal reappraisal horizons and satiation decay can therefore use the same canonical chronology as Temporal motive events.
+
+
+## V0.9 MESO-CRCT intent bridge
+
+`MesoIntentBridge` accepts MESO-CRCT's non-executable `IntentProposal` contract only. APPROACH maps to open-loop evidence, INSPECT to epistemic evidence, WITHDRAW to protection, and HOLD to no signal. Raw salience is not admitted and bridge output remains `MODEL_GENERATED` evidence rather than Choice or authority. See `docs/MESO_INTEGRATION.md`.

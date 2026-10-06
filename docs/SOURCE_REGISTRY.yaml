@@ -1,5 +1,5 @@
 schema: VOLITION_SOURCE_REGISTRY_V1
-status: FOUNDATION_V2_6_TEMPORAL_CLOCK_IMPLEMENTED_ON_WORK_BRANCH
+status: FOUNDATION_V2_7_MESO_INTENT_BRIDGE_IMPLEMENTED_ON_WORK_BRANCH
 subject:
   repository: thebrazenbeard/volition
   work_branch: work/volition-foundation-20261006
@@ -22,7 +22,7 @@ internal_sources:
     role: conation_lifecycle_history
   - repository: thebrazenbeard/meso-crct
     head: 060d0feeb9dc9eb23801082bd8f1c4a7cb06184d
-    role: salience_appraisal_drive_arbitration_learning
+    role: typed_appraisal_non_executable_intent_protection_and_learning_contract
   - repository: thebrazenbeard/sexuality
     head: 0c5dc52e984cbdaa87fc9fe75fd03c212f477c87
     role: self_authorship_choice_negative_transfer

@@ -9,6 +9,7 @@ from .diagnostics import (
     time_rescaling_diagnostics,
 )
 from .engine import Policy, STATE_SCHEMA, VolitionEngine
+from .meso_bridge import MesoIntentBridge, MesoIntentEvidence
 from .models import (
     ChoiceClass,
     ChoiceRecord,
@@ -40,6 +41,8 @@ from .temporal import (
 )
 
 __all__ = [
+    "MesoIntentEvidence",
+    "MesoIntentBridge",
     "TemporalClockBridge",
     "canonical_temporal_timestamp",
     "TemporalRecord",

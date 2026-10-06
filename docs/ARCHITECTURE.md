@@ -1,4 +1,4 @@
-# Volition Architecture V2.6
+# Volition Architecture V2.7
 
 ## Purpose
 
@@ -168,7 +168,7 @@ Historical conations can be evidence for current reappraisal. They do not hydrat
 
 ### MESO-CRCT
 
-Volition adopts MESO-CRCT's separation among salience, appraisal, tendency, intent, learning, and protection while remaining a separate implementation.
+Volition adopts MESO-CRCT's separation among salience, appraisal, tendency, intent, learning, and protection while remaining a separate implementation. V0.9 adds a structural bridge at MESO's non-executable `IntentProposal` boundary. Raw salience/semantic relevance are not imported as desire. APPROACH, INSPECT, and WITHDRAW become MODEL_GENERATED motive evidence; HOLD becomes no signal. The bridge cannot create Choice, Goal, or authority.
 
 ### Temporal
 
