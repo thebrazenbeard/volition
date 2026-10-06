@@ -30,6 +30,7 @@ class Policy:
     empowerment_cap: float = 0.40
     endogenous_turn_budget: int = 3
     satiation_half_life_seconds: float = 3600.0
+    goal_reappraisal_seconds: float = 21600.0
 
 
 class VolitionEngine:
@@ -72,7 +73,6 @@ class VolitionEngine:
 
         magnitude = _unit(signal.magnitude)
         confidence = _unit(signal.confidence)
-
         if signal.kind is DriveKind.EPISTEMIC:
             return (
                 magnitude
@@ -98,8 +98,7 @@ class VolitionEngine:
         wants: list[Want] = []
         for target, target_signals in grouped.items():
             contributions: list[DriveContribution] = []
-            protection = 0.0
-            positive = 0.0
+            family_values: dict[DriveKind, float] = {}
             reasons: list[str] = []
 
             for signal in target_signals:
@@ -112,16 +111,22 @@ class VolitionEngine:
                         provenance=signal.provenance,
                     )
                 )
+                family_values[signal.kind] = max(
+                    family_values.get(signal.kind, 0.0),
+                    value,
+                )
                 if (
                     signal.provenance is ProvenanceClass.HISTORICAL_EVIDENCE
                     and not signal.current_reappraisal
                 ):
                     reasons.append("historical_requires_current_reappraisal")
-                if signal.kind is DriveKind.PROTECTION:
-                    protection = max(protection, value)
-                else:
-                    positive += value
 
+            protection = family_values.get(DriveKind.PROTECTION, 0.0)
+            positive = sum(
+                value
+                for kind, value in family_values.items()
+                if kind is not DriveKind.PROTECTION
+            )
             satiation = _unit(self._satiation.get(target, 0.0))
             score = _unit(positive) * (1.0 - satiation)
             vetoed = protection >= self.policy.protection_veto
@@ -152,14 +157,57 @@ class VolitionEngine:
             goal_id=f"goal-{self._goal_counter:04d}",
             target=want.target,
             adoption_score=want.score,
+            adopted_at_seconds=self._elapsed_seconds,
         )
         self._active_goal = goal
         self._endogenous_turns = 0
         self._emit("GOAL_ADOPTED", goal.target, goal_id=goal.goal_id, score=goal.adoption_score)
         return goal
 
+    def _reappraise_active_goal(self, wants: list[Want]) -> None:
+        if self._active_goal is None:
+            return
+        horizon = self.policy.goal_reappraisal_seconds
+        if horizon <= 0:
+            due = True
+        else:
+            due = (self._elapsed_seconds - self._active_goal.adopted_at_seconds) >= horizon
+        if not due:
+            return
+
+        candidate = next(
+            (want for want in wants if want.target == self._active_goal.target),
+            None,
+        )
+        if candidate is None or not candidate.eligible or candidate.vetoed:
+            self._emit(
+                "GOAL_SUSPENDED",
+                self._active_goal.target,
+                reason="current_reappraisal_due",
+            )
+            self._active_goal = None
+            self._endogenous_turns = 0
+            return
+
+        previous = self._active_goal
+        self._active_goal = Goal(
+            goal_id=previous.goal_id,
+            target=previous.target,
+            adoption_score=candidate.score,
+            adopted_at_seconds=self._elapsed_seconds,
+            revision=previous.revision + 1,
+        )
+        self._endogenous_turns = 0
+        self._emit(
+            "GOAL_REAPPRAISED",
+            previous.target,
+            goal_id=previous.goal_id,
+            revision=self._active_goal.revision,
+        )
+
     def tick(self, signals: list[Signal]) -> Goal | None:
         wants = self.evaluate(signals)
+        self._reappraise_active_goal(wants)
 
         if self._active_goal is not None:
             active_candidate = next(
@@ -255,7 +303,6 @@ class VolitionEngine:
     def from_snapshot(cls, snapshot: dict[str, object]) -> "VolitionEngine":
         if snapshot.get("schema") != STATE_SCHEMA:
             raise ValueError("unsupported or missing Volition state schema")
-
         raw_policy = snapshot.get("policy")
         if not isinstance(raw_policy, dict):
             raise ValueError("snapshot policy is invalid")
@@ -288,13 +335,12 @@ class VolitionEngine:
         for raw_event in raw_events:
             if not isinstance(raw_event, dict) or raw_event.get("effect_authority") is not False:
                 raise ValueError("snapshot event violates authority boundary")
-            details = raw_event.get("details", ())
             event = TransitionEvent(
                 sequence=int(raw_event["sequence"]),
                 kind=str(raw_event["kind"]),
                 target=str(raw_event["target"]),
                 at_seconds=float(raw_event["at_seconds"]),
-                details=tuple(tuple(item) for item in details),
+                details=tuple(tuple(item) for item in raw_event.get("details", ())),
                 effect_authority=False,
             )
             if event.sequence != len(engine._events) + 1:

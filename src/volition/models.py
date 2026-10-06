@@ -63,6 +63,7 @@ class Goal:
     goal_id: str
     target: str
     adoption_score: float
+    adopted_at_seconds: float = 0.0
     revision: int = 1
     status: str = "ACTIVE"
     effect_authority: bool = False
