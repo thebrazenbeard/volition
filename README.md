@@ -117,9 +117,9 @@ See:
 
 ## Status
 
-FOUNDATION_V2_8_HISTORY_CURRENTNESS_BRIDGE_IMPLEMENTED_AND_TESTED_ON_WORK_BRANCH
+FOUNDATION_V2_8_HISTORY_CURRENTNESS_BRIDGE_CANONICAL_ON_MAIN
 
-This does not mean merged to `main`, installed into a runtime, behaviorally qualified in a live agent, or independently reviewed.
+Canonical source is now on `main`. Source presence still does not by itself prove runtime installation, live behavioral qualification, or independent review.
 
 
 ## V2.1 diffusion extension
