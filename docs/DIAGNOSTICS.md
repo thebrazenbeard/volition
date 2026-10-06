@@ -74,8 +74,19 @@ Diagnostics cannot:
 
 Brown et al. (2002), DOI 10.1162/08997660252741149, gives the standard result: under a correct integrable conditional-intensity model, compensator-transformed event intervals are unit-rate exponential under the theorem's conditions.
 
-Volition currently exposes only those transformed intervals.
+Volition exposes those transformed intervals plus bounded distributional screening statistics; it does not convert them into a model-certification verdict.
 
 El-Aroui (2025), DOI 10.1080/02664763.2025.2459245, shows why standard plug-in time-rescaling can be biased when the same observed trajectory is used to estimate a self-exciting model and then assess its fit. The stronger future direction is predictive/prequential rescaling with sequentially estimated parameters.
 
-Therefore V0.4 does not label time-rescaling as certification. It is one diagnostic evidence stream.
+Therefore V0.6 does not label time-rescaling or its KS/correlation screening as certification. They are diagnostic evidence streams.
+
+## Distributional screening
+
+`evaluate_time_rescaled_intervals(...)` checks two direct implications used for screening a correctly specified continuous-time point-process model:
+
+1. Exp(1) marginal behavior: each rescaled interval z is mapped to `u = 1 - exp(-z)`, which should be Uniform(0,1). Volition reports the one-sample Kolmogorov-Smirnov distance to Uniform(0,1).
+2. Serial structure: Volition reports lag-1 correlation of the rescaled intervals when at least three observations and nonzero variance make it defined.
+
+The result also reports interval mean and population variance. Exp(1) has mean 1 and variance 1, but these moments are descriptive checks rather than acceptance thresholds.
+
+Volition deliberately does not return a p-value or PASS/FAIL flag. Small samples, fitted-parameter reuse, serial dependence, and model-selection effects make such a flag easy to overinterpret. Predictive/prequential validation and held-out event timing remain stronger evidence.

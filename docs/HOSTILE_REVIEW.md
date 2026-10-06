@@ -167,3 +167,21 @@ ACCEPTED V2.3 LIMIT. The implementation is an age-since-last-event hazard, not a
 > The first event has no renewal history, yet a recurrence model might silently invent one.
 
 FIXED BY DESIGN. With no prior matching event, the renewal term is zero. Initial occurrence must be supported by other temporal or current evidence.
+
+## Rescaling-distribution hostile additions
+
+> A KS statistic can be presented as a certification even when the sample is tiny or parameters were fitted on the same trajectory.
+
+BLOCKED BY API DESIGN. V0.6 returns the distance only, with no p-value or PASS/FAIL flag. Interpretation remains an external evidence judgment.
+
+> Marginal exponentiality can hide serial dependence.
+
+MITIGATED. Lag-1 correlation is exposed as a screening statistic. It is not a complete independence test, so higher-order/dependence analysis remains an empirical validation task.
+
+> Good rescaling diagnostics can encourage selecting a more complex model on the same data used to fit it.
+
+OPEN / DOCUMENTED. Held-out timing, predictive/prequential checks, and simpler-model comparison remain required for model selection.
+
+> Invalid numerical intervals could silently poison the diagnostics.
+
+FAIL-CLOSED. Negative, NaN, and infinite intervals are rejected. Empty input produces no distributional claim.

@@ -1,5 +1,5 @@
 schema: VOLITION_SOURCE_REGISTRY_V1
-status: FOUNDATION_V2_3_RENEWAL_IMPLEMENTED_ON_WORK_BRANCH
+status: FOUNDATION_V2_4_RESCALING_VALIDATION_IMPLEMENTED_ON_WORK_BRANCH
 subject:
   repository: thebrazenbeard/volition
   work_branch: work/volition-foundation-20261006

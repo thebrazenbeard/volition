@@ -1,9 +1,12 @@
 from .diagnostics import (
     MartingaleResidual,
     PoissonNullModel,
+    TimeRescalingDiagnostics,
+    evaluate_time_rescaled_intervals,
     integrated_intensity,
     martingale_residual,
     time_rescaled_intervals,
+    time_rescaling_diagnostics,
 )
 from .engine import Policy, STATE_SCHEMA, VolitionEngine
 from .models import (
@@ -50,10 +53,13 @@ __all__ = [
     "STATE_SCHEMA",
     "Signal",
     "TemporalIntensity",
+    "TimeRescalingDiagnostics",
     "TransitionEvent",
     "VolitionEngine",
     "Want",
+    "evaluate_time_rescaled_intervals",
     "integrated_intensity",
     "martingale_residual",
     "time_rescaled_intervals",
+    "time_rescaling_diagnostics",
 ]

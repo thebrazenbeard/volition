@@ -241,3 +241,22 @@ Research:
 - Renewal Time Points for Hawkes Processes, arXiv:1906.02036.
 
 No public implementation repository of sufficient relevance/quality was admitted for this unit; the implementation is original and paper-guided.
+
+## 2026-10-06 - distributional validation of time-rescaled intervals
+
+The final non-data-dependent diagnostics frontier was implemented.
+
+Contract:
+- transform Exp(1) candidate intervals to Uniform(0,1) with `u = 1 - exp(-z)`;
+- compute one-sample KS distance against Uniform(0,1);
+- report mean and population variance of rescaled intervals;
+- report lag-1 correlation only when mathematically defined;
+- reject negative or non-finite intervals;
+- do not emit p-values or binary model-certification claims.
+
+TDD evidence:
+- valid red: `evaluate_time_rescaled_intervals` import absent;
+- green focused suite: 8/8 tests;
+- full regression after implementation: 58/58 tests.
+
+Research basis remains Brown et al. 2002 time-rescaling plus the recorded 2025 warning about misuse of standard rescaling with fitted self-exciting models.

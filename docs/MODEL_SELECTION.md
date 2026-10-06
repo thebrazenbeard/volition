@@ -254,6 +254,7 @@ IMPLEMENTED DIAGNOSTICS:
 1. homogeneous Poisson null-model comparison.
 2. martingale compensator residuals.
 3. time-rescaled inter-event intervals.
+4. Uniform-transform KS and lag-1 correlation screening.
 
 IMPLEMENTED TEMPORAL EXTENSION:
 1. age-dependent renewal/refractory hazard.
@@ -293,11 +294,10 @@ The following items previously listed under NEXT HIGH-VALUE are now implemented:
 - martingale/compensator residual diagnostics.
 
 Still next:
-- distributional validation of time-rescaled intervals;
 - ARIMAX when verified exogenous predictors exist;
 - SARIMA when empirical seasonality exists.
 
 Renewal/refractory hazard is implemented in V0.5.
 
 
-Time-rescaled compensator intervals are now implemented. The remaining diagnostics frontier is distributional validation of those intervals (for example exponentiality/uniform-transform checks and dependence tests), not interval construction itself.
+Time-rescaled compensator intervals and distributional screening are implemented. The diagnostics frontier is now empirical validation on held-out or predictive data rather than another unconditional model component.

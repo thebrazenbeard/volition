@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from math import inf, log
+from math import exp, inf, isfinite, log, sqrt
 from typing import Iterable
 
 from .models import DriveKind
@@ -169,3 +169,102 @@ def time_rescaled_intervals(
         )
         previous = event_time
     return tuple(transformed)
+
+
+
+@dataclass(frozen=True, slots=True)
+class TimeRescalingDiagnostics:
+    """Distributional screening statistics for rescaled intervals."""
+
+    count: int
+    mean_interval: float | None
+    variance_interval: float | None
+    uniform_ks_statistic: float | None
+    lag1_correlation: float | None
+    uniform_values: tuple[float, ...]
+
+
+def evaluate_time_rescaled_intervals(
+    intervals: Iterable[float],
+) -> TimeRescalingDiagnostics:
+    """Evaluate Exp(1) and serial-structure implications without p-values."""
+
+    values = tuple(float(value) for value in intervals)
+    if any(value < 0.0 or not isfinite(value) for value in values):
+        raise ValueError("rescaled intervals must be finite and non-negative")
+
+    count = len(values)
+    if count == 0:
+        return TimeRescalingDiagnostics(
+            count=0,
+            mean_interval=None,
+            variance_interval=None,
+            uniform_ks_statistic=None,
+            lag1_correlation=None,
+            uniform_values=(),
+        )
+
+    mean_interval = sum(values) / count
+    variance_interval = sum(
+        (value - mean_interval) ** 2 for value in values
+    ) / count
+
+    uniform_values = tuple(1.0 - exp(-value) for value in values)
+    ordered = sorted(uniform_values)
+    d_plus = max(
+        (index / count) - value
+        for index, value in enumerate(ordered, start=1)
+    )
+    d_minus = max(
+        value - ((index - 1) / count)
+        for index, value in enumerate(ordered, start=1)
+    )
+    ks_statistic = max(d_plus, d_minus)
+
+    lag1_correlation: float | None = None
+    if count >= 3:
+        left = values[:-1]
+        right = values[1:]
+        left_mean = sum(left) / len(left)
+        right_mean = sum(right) / len(right)
+        left_ss = sum((value - left_mean) ** 2 for value in left)
+        right_ss = sum((value - right_mean) ** 2 for value in right)
+        denominator = sqrt(left_ss * right_ss)
+        if denominator > 0.0:
+            covariance = sum(
+                (x - left_mean) * (y - right_mean)
+                for x, y in zip(left, right)
+            )
+            lag1_correlation = covariance / denominator
+
+    return TimeRescalingDiagnostics(
+        count=count,
+        mean_interval=mean_interval,
+        variance_interval=variance_interval,
+        uniform_ks_statistic=ks_statistic,
+        lag1_correlation=lag1_correlation,
+        uniform_values=uniform_values,
+    )
+
+
+def time_rescaling_diagnostics(
+    model: MotiveTemporalModel,
+    target: str,
+    kind: DriveKind,
+    *,
+    start: float,
+    end: float,
+    steps_per_interval: int = 1000,
+) -> TimeRescalingDiagnostics:
+    """Generate time-rescaled intervals and evaluate their diagnostics."""
+
+    return evaluate_time_rescaled_intervals(
+        time_rescaled_intervals(
+            model,
+            target,
+            kind,
+            start=start,
+            end=end,
+            steps_per_interval=steps_per_interval,
+        )
+    )

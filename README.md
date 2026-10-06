@@ -6,7 +6,7 @@ It is built to make reactive models more proactive without collapsing motivation
 
 `SALIENCE != DRIVE != WANT != CHOICE != GOAL != CONSENT != AUTHORITY != ACTION != PHENOMENOLOGY`
 
-## Foundation V2.3
+## Foundation V2.4
 
 The current work branch implements:
 - eight typed motive families: homeostatic, epistemic, competence, empowerment, open-loop, social, self-model, and protection;
@@ -24,6 +24,7 @@ The current work branch implements:
 - age-dependent renewal/refractory recurrence hazard;
 - homogeneous Poisson null-model calibration;
 - martingale residual and time-rescaling point-process diagnostics;
+- distributional screening of time-rescaled intervals via Uniform-transform KS distance and lag-1 correlation;
 - conservative subcriticality checks against runaway excitation;
 - hard `effect_authority=False` boundaries throughout.
 
@@ -109,7 +110,7 @@ See:
 
 ## Status
 
-FOUNDATION_V2_3_RENEWAL_IMPLEMENTED_AND_TESTED_ON_WORK_BRANCH
+FOUNDATION_V2_4_RESCALING_VALIDATION_IMPLEMENTED_AND_TESTED_ON_WORK_BRANCH
 
 This does not mean merged to `main`, installed into a runtime, behaviorally qualified in a live agent, or independently reviewed.
 
@@ -144,3 +145,10 @@ V0.4 also exposes `time_rescaled_intervals(...)`, which maps observed event gaps
 The temporal stack now optionally models age since the last matching motive event. `RefractoryRenewalHazard` can impose an absolute refractory window and then recover recurrence hazard toward an asymptotic rate.
 
 This recurrence term is separate from Hawkes excitation and from engine-level satiation. See `docs/RENEWAL_DYNAMICS.md`.
+
+
+## V0.6 rescaling distribution diagnostics
+
+Volition now evaluates time-rescaled intervals without issuing a binary model-validity verdict. `evaluate_time_rescaled_intervals(...)` reports interval mean/variance, the Uniform-transform Kolmogorov-Smirnov distance, lag-1 correlation when defined, and transformed Uniform values.
+
+No p-value is manufactured. These are screening statistics and remain diagnostic-only.
