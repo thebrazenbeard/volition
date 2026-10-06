@@ -6,7 +6,7 @@ It is built to make reactive models more proactive without collapsing motivation
 
 `SALIENCE != DRIVE != WANT != CHOICE != GOAL != CONSENT != AUTHORITY != ACTION != PHENOMENOLOGY`
 
-## Foundation V2.1
+## Foundation V2.2
 
 The current work branch implements:
 - eight typed motive families: homeostatic, epistemic, competence, empowerment, open-loop, social, self-model, and protection;
@@ -21,6 +21,8 @@ The current work branch implements:
 - ARIMA slow-baseline motive forecasts;
 - multivariate Hawkes self-/cross-excitation and inhibition;
 - optional replayable Brownian diffusion and mean-reverting Ornstein-Uhlenbeck diffusion;
+- homogeneous Poisson null-model calibration;
+- martingale residual and time-rescaling point-process diagnostics;
 - conservative subcriticality checks against runaway excitation;
 - hard `effect_authority=False` boundaries throughout.
 
@@ -105,7 +107,7 @@ See:
 
 ## Status
 
-FOUNDATION_V2_1_DIFFUSION_IMPLEMENTED_AND_TESTED_ON_WORK_BRANCH
+FOUNDATION_V2_2_DIAGNOSTICS_IMPLEMENTED_AND_TESTED_ON_WORK_BRANCH
 
 This does not mean merged to `main`, installed into a runtime, behaviorally qualified in a live agent, or independently reviewed.
 

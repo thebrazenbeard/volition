@@ -193,3 +193,27 @@ The live branch added a stronger diagnostics contract before closeout:
 After implementation, full regression: 41/41 tests.
 
 The time-rescaling function returns transformed intervals only. V0.4 does not yet perform KS, exponentiality, independence, or other distributional goodness-of-fit tests.
+
+## 2026-10-06 - point-process diagnostic hardening
+
+The next high-value calibration layer was admitted:
+- homogeneous Poisson null model;
+- numerical compensator integration;
+- martingale residuals;
+- time-rescaled inter-event intervals.
+
+Provenance note:
+- the initial diagnostics implementation and six tests existed only as untracked working-tree material and therefore did not count as durable repository evidence;
+- two additional tests established a real missing contract for time-rescaling and predictable-jump integration;
+- valid red: import failure for missing time_rescaled_intervals;
+- green after implementation: 8/8 diagnostics tests.
+
+Numerical correction:
+- compensator integration now uses midpoint quadrature instead of endpoint trapezoidal sampling so event-time jumps are not sampled directly by the integration rule.
+
+Research:
+- Brown et al. 2002 time-rescaling theorem, DOI 10.1162/08997660252741149;
+- El-Aroui 2025 warning on standard time-rescaling bias for fitted self-exciting models, DOI 10.1080/02664763.2025.2459245;
+- Eden-Kramer-Lab/popTRT @ b21a5abcb0f997a8e41c1585065e309dbaa954c4.
+
+No third-party code was copied.

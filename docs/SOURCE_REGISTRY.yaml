@@ -1,5 +1,5 @@
 schema: VOLITION_SOURCE_REGISTRY_V1
-status: FOUNDATION_V2_1_DIFFUSION_IMPLEMENTED_ON_WORK_BRANCH
+status: FOUNDATION_V2_2_DIAGNOSTICS_IMPLEMENTED_ON_WORK_BRANCH
 subject:
   repository: thebrazenbeard/volition
   work_branch: work/volition-foundation-20261006
@@ -130,10 +130,24 @@ diffusion_academic_sources:
     role: brownian_driven_diffusion_approximation_with_hawkes_memory
 
 
-diagnostic_academic_sources:
+diagnostic_background_sources:
   - locator: arXiv:1507.02822
     title: Hawkes Processes
     role: hawkes_conditional_intensity_and_point_process_background
   - locator: DOI:10.1137/21M1396927
     title: Hawkes Processes Modeling, Inference, and Control - An Overview
     role: hawkes_inference_and_model_evaluation_background
+
+diagnostics_repositories:
+  - repository: Eden-Kramer-Lab/popTRT
+    head: b21a5abcb0f997a8e41c1585065e309dbaa954c4
+    role: marked_point_process_time_rescaling_reference
+    transfer: DESIGN_EVIDENCE_ONLY
+
+time_rescaling_academic_sources:
+  - locator: DOI:10.1162/08997660252741149
+    title: The time-rescaling theorem and its application to neural spike train data analysis
+    role: conditional_intensity_goodness_of_fit
+  - locator: DOI:10.1080/02664763.2025.2459245
+    title: On the use and misuse of time-rescaling to assess the goodness-of-fit of self-exciting temporal point processes
+    role: predictive_time_rescaling_bias_warning

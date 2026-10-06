@@ -250,12 +250,15 @@ CORE NOW:
 5. Brownian motion as lower-level diffusion primitive.
 6. typed Choice and currentness boundaries.
 
+IMPLEMENTED DIAGNOSTICS:
+1. homogeneous Poisson null-model comparison.
+2. martingale compensator residuals.
+3. time-rescaled inter-event intervals.
+
 NEXT HIGH-VALUE:
-1. Poisson null-model comparison.
-2. martingale / time-rescaling calibration diagnostics.
-3. renewal/refractory hazard.
-4. ARIMAX for verified exogenous context.
-5. SARIMA if empirical seasonality appears.
+1. renewal/refractory hazard.
+2. ARIMAX for verified exogenous context.
+3. SARIMA if empirical seasonality appears.
 
 CONDITIONAL:
 1. VAR for slow cross-drive coupling.

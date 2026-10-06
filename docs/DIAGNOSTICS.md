@@ -68,3 +68,14 @@ Diagnostics cannot:
 - promote a Choice class;
 - authorize an effect;
 - prove phenomenology, identity, or self-authorship.
+
+
+## Time-rescaling claim boundary
+
+Brown et al. (2002), DOI 10.1162/08997660252741149, gives the standard result: under a correct integrable conditional-intensity model, compensator-transformed event intervals are unit-rate exponential under the theorem's conditions.
+
+Volition currently exposes only those transformed intervals.
+
+El-Aroui (2025), DOI 10.1080/02664763.2025.2459245, shows why standard plug-in time-rescaling can be biased when the same observed trajectory is used to estimate a self-exciting model and then assess its fit. The stronger future direction is predictive/prequential rescaling with sequentially estimated parameters.
+
+Therefore V0.4 does not label time-rescaling as certification. It is one diagnostic evidence stream.

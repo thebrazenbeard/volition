@@ -122,3 +122,25 @@ BLOCKED BY ARCHITECTURE. Diagnostics currently return evaluation objects only. T
 > Poisson is too simple to be useful.
 
 REJECTED as a reason to omit it. Its simplicity is the point: Hawkes complexity must beat a no-history baseline rather than being assumed necessary.
+
+## Diagnostics hostile additions
+
+> A complex temporal model may fail to improve prediction over a memoryless arrival baseline.
+
+MITIGATED. The homogeneous Poisson null is explicit. Hawkes complexity must be justified against a no-history baseline rather than assumed useful.
+
+> Numerical compensator integration may sample an event-time discontinuity incorrectly.
+
+FOUND AND FIXED. Integration now uses midpoint quadrature rather than endpoint trapezoids, avoiding direct sampling at jump times.
+
+> A single small martingale residual may be overinterpreted as proof of fit.
+
+REJECTED AS A CLAIM. One residual is only local calibration evidence. Sequence-level and out-of-sample evaluation are stronger evidence.
+
+> Standard time-rescaling can be biased when fitted parameters and goodness-of-fit evaluation reuse the same trajectory.
+
+OPEN / DOCUMENTED. Standard rescaling is retained as evidence, not certification. Predictive or prequential rescaling is the stronger future extension.
+
+> Diagnostic outputs could accidentally feed back into motive generation.
+
+GUARD. Diagnostic objects are not Drive signals and expose no Want, Choice, or Goal mutation API.
