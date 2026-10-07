@@ -196,3 +196,8 @@ An optional diffusion term may modify the slow temporal baseline before Hawkes e
 Brownian motion is implemented as a replayable primitive. Ornstein-Uhlenbeck is preferred for mean-reverting stochastic deviation. Diffusion, ARIMA baseline, and Hawkes excitation remain separately inspectable.
 
 A diffusion value is system state, not Want, Choice, consent, authority, or phenomenology.
+
+
+## Donor-derived context eligibility boundary
+
+A 2026-10-07 donor extraction from Sexuality/Orgasm preserves one additional design distinction without changing the current engine: `MOTIVE_INTENSITY != CONTEXT_ELIGIBILITY`. A strong Want need not be eligible for pursuit in every current context, and contextual ineligibility must not be silently rewritten as motive disappearance, protection veto, consent, or authority. The current executable engine does not yet expose a separately typed context gate; implementation remains conditional on a demonstrated gap. See `docs/SEXUALITY_ORGASM_DONOR_TRANSFER_20261007.md`.
