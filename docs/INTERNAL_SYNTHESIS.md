@@ -1,4 +1,4 @@
-﻿# Internal Source Synthesis
+# Internal Source Synthesis
 
 Evidence cut: 2026-10-06. This document records architecture lessons from exact repository revisions. It does not make those repositories runtime dependencies and does not promote historical/private state into current desire, consent, identity, or authority.
 
@@ -18,7 +18,7 @@ Volition owns the middle of the chain: drives, wants, goal adoption, persistence
 
 ## Source contributions
 
-### pre-active @ 94cb3b8044d7a4263c50a96bfecfcfebc5533716
+### pre-active @ a6900dc2d2fb65f4ea66db95fca1b9c5b022450b
 
 Admit:
 - endogenous, temporal, external, and open-loop causes can justify a model turn;
@@ -26,12 +26,15 @@ Admit:
 - self-requested cognition needs a total budget and a consecutive-depth bound;
 - Observer / Initiator / Critic are separable functions;
 - continuous residence is not continuous inference;
-- autonomous cognition is not effect authority.
+- autonomous cognition is not effect authority;
+- current durable observers may apply a subcritical exponential-Hawkes threshold to observed changes, but that score is a turn-admission mechanism rather than a motive, importance verdict, capability grant, or effect authority.
 
 Volition consequence:
 - a sufficiently strong unresolved goal may emit a bounded cognition request;
-- it may never directly dispatch an effect;
-- repeated self-stimulation is budgeted and eventually refused.
+- V0.11 may translate that request only into a non-dispatching proposal matching Pre-Active's reserved `pre_active.request_turn` contract;
+- it may never directly dispatch an effect or enlarge the existing Pre-Active capability set;
+- repeated self-stimulation remains subject to Pre-Active's independent runtime budget and endogenous-depth fences;
+- Pre-Active observer Hawkes scores are not imported as Volition motive intensity.
 
 ### conations @ 51948aac796936f0e7c437722e6f52c883e544e9
 
