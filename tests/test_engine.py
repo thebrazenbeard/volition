@@ -104,6 +104,28 @@ def test_endogenous_cognition_is_bounded_and_never_authority():
     assert third is None
 
 
+@pytest.mark.parametrize("nonfinite", [float("nan"), float("inf"), float("-inf")])
+def test_nonfinite_signal_and_satisfaction_cannot_become_motivation(nonfinite):
+    engine = VolitionEngine()
+    with pytest.raises(ValueError, match="finite"):
+        engine.evaluate([signal(DriveKind.OPEN_LOOP, magnitude=nonfinite)])
+    with pytest.raises(ValueError, match="finite"):
+        engine.record_satisfaction("x", nonfinite)
+    assert engine.events == ()
+
+
+@pytest.mark.parametrize("nonfinite", [float("nan"), float("inf"), float("-inf")])
+def test_nonfinite_time_cannot_poison_resident_clock_or_restored_state(nonfinite):
+    engine = VolitionEngine()
+    with pytest.raises(ValueError, match="finite"):
+        engine.advance(nonfinite)
+    assert engine.elapsed_seconds == 0.0
+    snapshot = engine.snapshot()
+    snapshot["elapsed_seconds"] = nonfinite
+    with pytest.raises(ValueError, match="finite"):
+        VolitionEngine.from_snapshot(snapshot)
+
+
 def test_social_approval_cannot_override_protection():
     engine = VolitionEngine()
     want = engine.evaluate([
