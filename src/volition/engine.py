@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+import math
 
 from .models import (
     ChoiceClass,
@@ -20,7 +21,10 @@ STATE_SCHEMA = "VOLITION_STATE_V2"
 
 
 def _unit(value: float) -> float:
-    return max(0.0, min(1.0, float(value)))
+    numeric = float(value)
+    if not math.isfinite(numeric):
+        raise ValueError("motivation inputs must be finite")
+    return max(0.0, min(1.0, numeric))
 
 
 @dataclass(frozen=True, slots=True)
@@ -322,6 +326,8 @@ class VolitionEngine:
             self._endogenous_turns = 0
 
     def advance(self, seconds: float) -> None:
+        if not math.isfinite(float(seconds)):
+            raise ValueError("elapsed time increment must be finite")
         if seconds < 0:
             raise ValueError("seconds must be non-negative")
         if seconds == 0:
@@ -434,8 +440,8 @@ class VolitionEngine:
             for key, value in raw_satiation.items()
         }
         engine._elapsed_seconds = float(snapshot.get("elapsed_seconds", 0.0))
-        if engine._elapsed_seconds < 0:
-            raise ValueError("snapshot elapsed time must be non-negative")
+        if not math.isfinite(engine._elapsed_seconds) or engine._elapsed_seconds < 0:
+            raise ValueError("snapshot elapsed time must be finite and non-negative")
 
         raw_events = snapshot.get("events", [])
         if not isinstance(raw_events, list):
