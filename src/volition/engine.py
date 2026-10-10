@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+import math
 
 from .models import (
     ChoiceClass,
@@ -20,7 +21,10 @@ STATE_SCHEMA = "VOLITION_STATE_V2"
 
 
 def _unit(value: float) -> float:
-    return max(0.0, min(1.0, float(value)))
+    value = float(value)
+    if not math.isfinite(value):
+        raise ValueError("motive input must be finite")
+    return max(0.0, min(1.0, value))
 
 
 @dataclass(frozen=True, slots=True)
