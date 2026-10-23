@@ -92,11 +92,7 @@ class MesoIntentBridge:
 
     @staticmethod
     def to_signals(value: object) -> tuple[Signal, ...]:
-        evidence = (
-            value
-            if isinstance(value, MesoIntentEvidence)
-            else MesoIntentEvidence.from_value(value)
-        )
+        evidence = MesoIntentEvidence.from_value(value)
         if evidence.kind == "hold":
             return ()
 
