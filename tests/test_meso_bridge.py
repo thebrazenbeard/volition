@@ -113,3 +113,39 @@ def test_salience_only_mapping_is_not_reinterpreted_as_intent():
 def test_invalid_meso_intent_contract_fails_closed(bad):
     with pytest.raises(ValueError):
         MesoIntentEvidence.from_value(bad)
+
+
+@pytest.mark.parametrize(
+    'overrides',
+    [
+        {'effect_authorized': True},
+        {'effect_authorized': 1},
+        {'kind': 'unsupported'},
+        {'strength': -0.1},
+        {'strength': 1.1},
+        {'strength': float('nan')},
+        {'target_id': None},
+        {'source_tendency': ''},
+    ],
+)
+def test_direct_typed_meso_evidence_cannot_bypass_contract_validation(overrides):
+    # Direct dataclass construction does not invoke from_value's checks.
+    raw = intent()
+    raw.pop('can_execute')
+    raw.update(overrides)
+    typed = MesoIntentEvidence(**raw)
+
+    with pytest.raises(ValueError):
+        MesoIntentBridge.to_signals(typed)
+
+
+def test_valid_direct_typed_meso_evidence_matches_mapping_and_hold():
+    raw = intent(kind='inspect', source='epistemic_value', source_tendency='inspect')
+    raw.pop('can_execute')
+    typed = MesoIntentEvidence(**raw)
+
+    assert MesoIntentBridge.to_signals(typed) == MesoIntentBridge.to_signals(raw)
+    assert MesoIntentBridge.to_signals(MesoIntentEvidence(
+        target_id=None, kind='hold', strength=0.4,
+        source_tendency='uncommitted', source='no_selection',
+    )) == ()
