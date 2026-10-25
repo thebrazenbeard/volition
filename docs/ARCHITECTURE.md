@@ -150,9 +150,15 @@ It also rejects nonfinite elapsed/event times, choice/goal scores and times,
 and satiation. This is structural state validation, not attestation that the
 stored goal was authorized or its provenance independently verified.
 Restore also cross-checks the active goal target against its originating Choice
-and rejects goal adoption in the future or nonmonotonic/out-of-clock transition
-timestamps. A valid sequence number alone is not enough to establish coherent
-temporal lineage.
+and rejects initial scores changed from that Choice. A revised goal can have a
+different score, but must be backed by contiguous matching reappraisal events.
+Those events do not record independently attested scoring inputs; snapshot
+authenticity remains external to this parser. Counters and event
+sequence must be actual integers, not booleans, strings, or truncated floats;
+engine-generated choice/goal IDs cannot exceed their counters. Restore rejects
+goal adoption in the future or nonmonotonic/out-of-clock transition timestamps.
+A valid sequence number alone is not enough to establish coherent temporal
+lineage.
 
 A snapshot is durable state material. It is not proof of runtime installation, current endorsement outside its own state contract, identity continuity, or phenomenology.
 

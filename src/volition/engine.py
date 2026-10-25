@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from copy import deepcopy
 from dataclasses import asdict, dataclass
 
 from .models import (
@@ -39,6 +40,29 @@ def _bounded(value: float, *, name: str) -> float:
     return resolved
 
 
+def _nonnegative_integer(value: object, *, name: str) -> int:
+    """Reject snapshot numeric coercion that conceals invalid persisted counts."""
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise ValueError(f"{name} must be a non-negative integer")
+    return value
+
+
+def _generated_id_number(value: object, *, prefix: str) -> int:
+    """Read only canonical engine-generated IDs, never untrusted aliases."""
+    if not isinstance(value, str) or not value.startswith(f"{prefix}-"):
+        raise ValueError(f"snapshot {prefix} ID is invalid")
+    suffix = value[len(prefix) + 1:]
+    if not suffix or not all("0" <= digit <= "9" for digit in suffix):
+        raise ValueError(f"snapshot {prefix} ID is invalid")
+    try:
+        number = int(suffix)
+    except ValueError as exc:
+        raise ValueError(f"snapshot {prefix} ID is invalid") from exc
+    if number < 1 or value != f"{prefix}-{number:04d}":
+        raise ValueError(f"snapshot {prefix} ID is invalid")
+    return number
+
+
 def _unit(value: float) -> float:
     return max(0.0, min(1.0, _finite(value, name="normalized value")))
 
@@ -46,6 +70,10 @@ def _unit(value: float) -> float:
 def _validated_signal(signal: Signal) -> None:
     if not isinstance(signal, Signal):
         raise ValueError("signal must be a typed Signal")
+    for field_name in ("target", "source"):
+        value = getattr(signal, field_name)
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"signal {field_name} must be non-empty text")
     if not isinstance(signal.kind, DriveKind):
         raise ValueError("signal kind must be a DriveKind enum")
     if not isinstance(signal.provenance, ProvenanceClass):
@@ -97,6 +125,8 @@ class VolitionEngine:
         self._satiation: dict[str, float] = {}
         self._elapsed_seconds = 0.0
         self._events: list[TransitionEvent] = []
+        # Ephemeral one-evaluation custody, intentionally excluded from snapshots.
+        self._issued_wants: list[tuple[Want, Want]] = []
 
     @property
     def elapsed_seconds(self) -> float:
@@ -152,6 +182,7 @@ class VolitionEngine:
         return magnitude * confidence
 
     def evaluate(self, signals: list[Signal]) -> list[Want]:
+        self._issued_wants = []
         grouped: dict[str, list[Signal]] = {}
         for signal in signals:
             _validated_signal(signal)
@@ -209,6 +240,7 @@ class VolitionEngine:
             )
 
         wants.sort(key=lambda want: (-want.score, want.target))
+        self._issued_wants = [(want, deepcopy(want)) for want in wants]
         return wants
 
     def choose(
@@ -218,6 +250,16 @@ class VolitionEngine:
         choice_class: ChoiceClass | str = ChoiceClass.POLICY_DERIVED,
         source: str = "volition:policy",
     ) -> ChoiceRecord:
+        issued_index = next(
+            (index for index, (issued, _) in enumerate(self._issued_wants)
+             if issued is want), None
+        )
+        if issued_index is None:
+            raise ValueError("want must originate from this engine's current evaluation")
+        _, issued_snapshot = self._issued_wants[issued_index]
+        if want != issued_snapshot:
+            raise ValueError("evaluated want was modified after arbitration")
+        _bounded(want.score, name="evaluated want score")
         if not want.eligible or want.vetoed:
             raise ValueError("want is not eligible for choice")
         try:
@@ -227,6 +269,7 @@ class VolitionEngine:
         if not source:
             raise ValueError("choice source is required")
 
+        del self._issued_wants[issued_index]
         self._choice_counter += 1
         choice = ChoiceRecord(
             choice_id=f"choice-{self._choice_counter:04d}",
@@ -250,6 +293,7 @@ class VolitionEngine:
         choice = self._choices.get(choice_id)
         if choice is None:
             raise ValueError("unknown choice")
+        self._issued_wants = []
         self._goal_counter += 1
         goal = Goal(
             goal_id=f"goal-{self._goal_counter:04d}",
@@ -355,6 +399,7 @@ class VolitionEngine:
 
     def record_satisfaction(self, target: str, amount: float) -> None:
         amount = _unit(amount)
+        self._issued_wants = []
         self._satiation[target] = _unit(self._satiation.get(target, 0.0) + amount)
         self._emit("SATISFACTION_RECORDED", target, amount=amount)
         if (
@@ -380,6 +425,7 @@ class VolitionEngine:
         new_elapsed = _finite(
             self._elapsed_seconds + seconds, name="accumulated elapsed time"
         )
+        self._issued_wants = []
         self._elapsed_seconds = new_elapsed
         half_life = self.policy.satiation_half_life_seconds
         if half_life <= 0:
@@ -397,6 +443,7 @@ class VolitionEngine:
             return None
         if self._endogenous_turns >= self.policy.endogenous_turn_budget:
             return None
+        self._issued_wants = []
         self._endogenous_turns += 1
         request = CognitionRequest(
             goal_id=self._active_goal.goal_id,
@@ -473,20 +520,41 @@ class VolitionEngine:
             goal_fields["adopted_at_seconds"] = _finite(
                 goal_fields["adopted_at_seconds"], name="snapshot goal adopted_at_seconds"
             )
+            revision = _nonnegative_integer(
+                goal_fields["revision"], name="snapshot goal revision"
+            )
+            if revision == 0:
+                raise ValueError("snapshot goal revision must be a positive integer")
             engine._active_goal = Goal(**goal_fields)
             if engine._active_goal.choice_id not in engine._choices:
                 raise ValueError("snapshot active goal has unknown choice")
             linked_choice = engine._choices[engine._active_goal.choice_id]
             if engine._active_goal.target != linked_choice.want_target:
                 raise ValueError("snapshot goal target does not match choice")
+            if revision == 1 and engine._active_goal.adoption_score != linked_choice.want_score:
+                raise ValueError("snapshot goal adoption score does not match choice")
 
-        engine._goal_counter = int(snapshot.get("goal_counter", 0))
-        engine._choice_counter = int(snapshot.get("choice_counter", 0))
-        engine._endogenous_turns = int(snapshot.get("endogenous_turns", 0))
-        if engine._goal_counter < 0 or engine._choice_counter < 0 or engine._endogenous_turns < 0:
-            raise ValueError("snapshot counters must be non-negative")
+        engine._goal_counter = _nonnegative_integer(
+            snapshot.get("goal_counter", 0), name="snapshot goal counter"
+        )
+        engine._choice_counter = _nonnegative_integer(
+            snapshot.get("choice_counter", 0), name="snapshot choice counter"
+        )
+        engine._endogenous_turns = _nonnegative_integer(
+            snapshot.get("endogenous_turns", 0), name="snapshot endogenous turns"
+        )
         if engine._choice_counter < len(engine._choices):
             raise ValueError("snapshot choice counter is inconsistent")
+        if any(
+            _generated_id_number(choice_id, prefix="choice") > engine._choice_counter
+            for choice_id in engine._choices
+        ):
+            raise ValueError("snapshot choice ID exceeds choice counter")
+        if engine._active_goal is not None and (
+            _generated_id_number(engine._active_goal.goal_id, prefix="goal")
+            > engine._goal_counter
+        ):
+            raise ValueError("snapshot goal ID exceeds goal counter")
         if engine._endogenous_turns > engine.policy.endogenous_turn_budget:
             raise ValueError("snapshot cognition budget is inconsistent")
 
@@ -514,7 +582,9 @@ class VolitionEngine:
             if not isinstance(raw_event, dict) or raw_event.get("effect_authority") is not False:
                 raise ValueError("snapshot event violates authority boundary")
             event = TransitionEvent(
-                sequence=int(raw_event["sequence"]),
+                sequence=_nonnegative_integer(
+                    raw_event["sequence"], name="snapshot event sequence"
+                ),
                 kind=str(raw_event["kind"]),
                 target=str(raw_event["target"]),
                 at_seconds=_finite(raw_event["at_seconds"], name="snapshot event at_seconds"),
@@ -530,4 +600,22 @@ class VolitionEngine:
             ):
                 raise ValueError("snapshot event time is not monotonic")
             engine._events.append(event)
+        if engine._active_goal is not None and engine._active_goal.revision > 1:
+            goal = engine._active_goal
+            reappraisals = [
+                event for event in engine._events
+                if event.kind == "GOAL_REAPPRAISED"
+                and event.target == goal.target
+                and dict(event.details).get("goal_id") == goal.goal_id
+                and dict(event.details).get("choice_id") == goal.choice_id
+            ]
+            if (
+                len(reappraisals) != goal.revision - 1
+                or any(
+                    dict(event.details).get("revision") != str(index)
+                    for index, event in enumerate(reappraisals, start=2)
+                )
+                or reappraisals[-1].at_seconds != goal.adopted_at_seconds
+            ):
+                raise ValueError("snapshot goal revision has no matching reappraisal event lineage")
         return engine

@@ -5,7 +5,7 @@ import math
 
 import pytest
 
-from volition import DriveKind, Policy, ProvenanceClass, Signal, VolitionEngine
+from volition import DriveKind, Policy, ProvenanceClass, Signal, VolitionEngine, Want
 
 
 def valid_signal(**overrides):
@@ -134,6 +134,69 @@ def test_snapshot_restore_rejects_forged_goal_choice_target_lineage():
         VolitionEngine.from_snapshot(snapshot)
 
 
+def test_snapshot_restore_rejects_goal_score_promotion_over_linked_choice():
+    engine = VolitionEngine()
+    engine.tick([valid_signal(kind=DriveKind.OPEN_LOOP)])
+    snapshot = engine.snapshot()
+    assert snapshot["active_goal"]["adoption_score"] < 1.0
+    snapshot["active_goal"]["adoption_score"] = 1.0
+    with pytest.raises(ValueError, match="goal.*score.*choice"):
+        VolitionEngine.from_snapshot(snapshot)
+
+
+def test_snapshot_round_trip_preserves_valid_goal_reappraisal_score():
+    engine = VolitionEngine(Policy(goal_reappraisal_seconds=1))
+    engine.tick([valid_signal(kind=DriveKind.OPEN_LOOP, magnitude=0.8)])
+    engine.advance(2)
+    revised = engine.tick([valid_signal(kind=DriveKind.OPEN_LOOP, magnitude=0.9)])
+    assert revised.revision == 2
+    assert revised.adoption_score == pytest.approx(0.9)
+    assert engine.choices[0].want_score == pytest.approx(0.8)
+    assert VolitionEngine.from_snapshot(engine.snapshot()).snapshot() == engine.snapshot()
+
+
+def test_snapshot_cannot_fake_reappraisal_revision_without_event():
+    engine = VolitionEngine()
+    engine.tick([valid_signal(kind=DriveKind.OPEN_LOOP, magnitude=0.8)])
+    snapshot = engine.snapshot()
+    snapshot["active_goal"]["revision"] = 2
+    snapshot["active_goal"]["adoption_score"] = 0.99
+    with pytest.raises(ValueError, match="reappraisal event"):
+        VolitionEngine.from_snapshot(snapshot)
+
+
+def test_snapshot_reappraisal_revisions_must_be_contiguous():
+    engine = VolitionEngine(Policy(goal_reappraisal_seconds=1))
+    engine.tick([valid_signal(kind=DriveKind.OPEN_LOOP, magnitude=0.8)])
+    engine.advance(2)
+    engine.tick([valid_signal(kind=DriveKind.OPEN_LOOP, magnitude=0.9)])
+    engine.advance(2)
+    engine.tick([valid_signal(kind=DriveKind.OPEN_LOOP, magnitude=0.7)])
+    snapshot = engine.snapshot()
+    assert snapshot["active_goal"]["revision"] == 3
+    assert VolitionEngine.from_snapshot(snapshot).snapshot() == snapshot
+    reappraisal = next(
+        event for event in snapshot["events"]
+        if event["kind"] == "GOAL_REAPPRAISED"
+    )
+    reappraisal["details"] = [
+        (key, "999" if key == "revision" else value)
+        for key, value in reappraisal["details"]
+    ]
+    with pytest.raises(ValueError, match="reappraisal event"):
+        VolitionEngine.from_snapshot(snapshot)
+
+
+@pytest.mark.parametrize("invalid", [True, 1.5, "2", 0, -1, None])
+def test_snapshot_rejects_invalid_goal_revision(invalid):
+    engine = VolitionEngine()
+    engine.tick([valid_signal(kind=DriveKind.OPEN_LOOP)])
+    snapshot = engine.snapshot()
+    snapshot["active_goal"]["revision"] = invalid
+    with pytest.raises(ValueError, match="revision.*integer"):
+        VolitionEngine.from_snapshot(snapshot)
+
+
 def test_snapshot_restore_rejects_future_goal_adoption_time():
     engine = VolitionEngine()
     engine.tick([valid_signal(kind=DriveKind.OPEN_LOOP)])
@@ -202,3 +265,151 @@ def test_clock_advance_rejects_accumulation_overflow_atomically():
     with pytest.raises(ValueError, match="finite"):
         engine.advance(1e308)
     assert engine.snapshot() == snapshot
+
+
+@pytest.mark.parametrize("field", ["goal_counter", "choice_counter", "endogenous_turns"])
+@pytest.mark.parametrize("invalid", [True, False, 1.9, "1", None])
+def test_snapshot_counters_reject_untyped_or_fractional_values(field, invalid):
+    engine = VolitionEngine()
+    engine.tick([valid_signal(kind=DriveKind.OPEN_LOOP)])
+    snapshot = engine.snapshot()
+    snapshot[field] = invalid
+    with pytest.raises(ValueError, match="integer"):
+        VolitionEngine.from_snapshot(snapshot)
+
+
+@pytest.mark.parametrize("invalid", [True, False, 1.9, "1", None])
+def test_snapshot_event_sequence_rejects_untyped_or_fractional_values(invalid):
+    engine = VolitionEngine()
+    engine.tick([valid_signal(kind=DriveKind.OPEN_LOOP)])
+    snapshot = engine.snapshot()
+    snapshot["events"][0]["sequence"] = invalid
+    with pytest.raises(ValueError, match="integer"):
+        VolitionEngine.from_snapshot(snapshot)
+
+
+def test_snapshot_valid_integer_counters_and_event_sequence_round_trip():
+    engine = VolitionEngine()
+    engine.tick([valid_signal(kind=DriveKind.OPEN_LOOP)])
+    engine.request_cognition()
+    snapshot = engine.snapshot()
+    assert VolitionEngine.from_snapshot(snapshot).snapshot() == snapshot
+
+
+def test_snapshot_choice_id_cannot_be_ahead_of_its_counter():
+    engine = VolitionEngine()
+    engine.tick([valid_signal(kind=DriveKind.OPEN_LOOP)])
+    snapshot = engine.snapshot()
+    snapshot["choices"][0]["choice_id"] = "choice-0002"
+    snapshot["active_goal"]["choice_id"] = "choice-0002"
+    with pytest.raises(ValueError, match="choice.*counter"):
+        VolitionEngine.from_snapshot(snapshot)
+
+
+def test_snapshot_active_goal_id_cannot_be_ahead_of_its_counter():
+    engine = VolitionEngine()
+    engine.tick([valid_signal(kind=DriveKind.OPEN_LOOP)])
+    snapshot = engine.snapshot()
+    snapshot["active_goal"]["goal_id"] = "goal-0002"
+    with pytest.raises(ValueError, match="goal.*counter"):
+        VolitionEngine.from_snapshot(snapshot)
+
+
+@pytest.mark.parametrize("field,invalid_id", [
+    ("choice", "choice-untracked"),
+    ("goal", "goal-0000"),
+])
+def test_snapshot_rejects_noncanonical_generated_ids(field, invalid_id):
+    engine = VolitionEngine()
+    engine.tick([valid_signal(kind=DriveKind.OPEN_LOOP)])
+    snapshot = engine.snapshot()
+    if field == "choice":
+        snapshot["choices"][0]["choice_id"] = invalid_id
+        snapshot["active_goal"]["choice_id"] = invalid_id
+    else:
+        snapshot["active_goal"]["goal_id"] = invalid_id
+    with pytest.raises(ValueError, match="ID is invalid"):
+        VolitionEngine.from_snapshot(snapshot)
+
+
+@pytest.mark.parametrize("forged_score", [math.nan, math.inf, 1.0])
+def test_forged_want_cannot_be_adopted_or_minted_as_policy_choice(forged_score):
+    engine = VolitionEngine()
+    forged = Want(
+        target="invented_motive", score=forged_score, contributions=(),
+        eligible=True, vetoed=False, reasons=(),
+    )
+    for attempt in (engine.choose, engine.adopt):
+        with pytest.raises(ValueError, match="evaluat"):
+            attempt(forged)
+    assert engine.choices == ()
+    assert engine.active_goal is None
+    assert engine.events == ()
+
+
+def test_want_from_another_engine_cannot_be_selected_as_local_evidence():
+    foreign = VolitionEngine().evaluate([valid_signal(kind=DriveKind.OPEN_LOOP)])[0]
+    local = VolitionEngine()
+    with pytest.raises(ValueError, match="evaluat"):
+        local.choose(foreign)
+    assert local.choices == ()
+
+
+def test_previously_evaluated_want_cannot_be_replayed_after_fresh_evaluation():
+    engine = VolitionEngine()
+    older = engine.evaluate([valid_signal(kind=DriveKind.OPEN_LOOP)])[0]
+    current = engine.evaluate([valid_signal(kind=DriveKind.OPEN_LOOP)])[0]
+    with pytest.raises(ValueError, match="evaluat"):
+        engine.choose(older)
+    assert engine.choose(current).want_target == "records"
+
+
+def test_mutated_evaluated_want_cannot_be_selected():
+    engine = VolitionEngine()
+    want = engine.evaluate([valid_signal(kind=DriveKind.OPEN_LOOP)])[0]
+    object.__setattr__(want, "score", 1.0)
+    with pytest.raises(ValueError, match="evaluat"):
+        engine.choose(want)
+    assert engine.choices == ()
+
+
+def test_mutated_nested_contribution_cannot_be_selected():
+    engine = VolitionEngine()
+    want = engine.evaluate([valid_signal(kind=DriveKind.OPEN_LOOP)])[0]
+    object.__setattr__(want.contributions[0], "value", math.nan)
+    with pytest.raises(ValueError, match="evaluat"):
+        engine.adopt(want)
+    assert engine.choices == ()
+
+
+def test_elapsed_time_or_satiation_invalidates_old_evaluated_want():
+    for invalidate in (
+        lambda engine: engine.advance(1.0),
+        lambda engine: engine.record_satisfaction("records", 0.2),
+    ):
+        engine = VolitionEngine()
+        want = engine.evaluate([valid_signal(kind=DriveKind.OPEN_LOOP)])[0]
+        invalidate(engine)
+        with pytest.raises(ValueError, match="evaluat"):
+            engine.choose(want)
+
+
+def test_single_evaluated_want_cannot_be_chosen_twice():
+    engine = VolitionEngine()
+    want = engine.evaluate([valid_signal(kind=DriveKind.OPEN_LOOP)])[0]
+    engine.choose(want)
+    with pytest.raises(ValueError, match="evaluat"):
+        engine.choose(want)
+    assert len(engine.choices) == 1
+
+
+@pytest.mark.parametrize("field,invalid", [
+    ("target", None), ("target", ""), ("target", "   "),
+    ("source", None), ("source", ""), ("source", "   "),
+])
+def test_untyped_or_blank_signal_identity_cannot_create_goals(field, invalid):
+    engine = VolitionEngine()
+    with pytest.raises(ValueError, match=field):
+        engine.tick([valid_signal(**{field: invalid})])
+    assert engine.active_goal is None
+    assert engine.choices == ()

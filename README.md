@@ -106,12 +106,22 @@ their existing bounded clamping behavior. The five normalized policy thresholds
 and caps require values in `[0, 1]`; the time parameters and restored
 snapshot numeric state reject non-finite input and coerced Boolean/string
 numbers. Snapshot choice/goal scores and satiation must lie in `[0, 1]`.
+Signal target and source must be nonblank strings. `choose()` and `adopt()`
+accept only an unchanged `Want` object produced by the engine's latest
+`evaluate()` call, consumed at most once. Time, satiation, goal adoption, and
+cognition-budget changes invalidate outstanding evaluated wants. This is
+process-local evidence of arbitration, **not** a
+cryptographic proof of upstream signal custody or external action permission.
 Clock advances check the accumulated time for overflow before modifying state.
 The endogenous
 cognition budget must be a nonnegative integer.
-Restore additionally checks that an active goal names the same target as its
-referenced Choice and that goal/transition timestamps do not exceed the
-restored logical clock or run backward.
+Restore additionally checks strictly typed nonnegative integer counters and
+event sequences; engine-generated choice/goal IDs must not exceed their
+counter. An active goal must preserve its originating Choice's target; its
+adoption score must match the Choice on revision 1. Later revisions require
+matching ordered `GOAL_REAPPRAISED` events, since genuine reappraisal can change
+the score. Goal/transition timestamps cannot exceed the restored logical clock
+or run backward.
 
 This validation protects the deterministic arbitration and persistence
 contracts. It does **not** authenticate a caller's claim that a current
