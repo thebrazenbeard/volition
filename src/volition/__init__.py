@@ -9,7 +9,12 @@ from .diagnostics import (
     time_rescaled_intervals,
     time_rescaling_diagnostics,
 )
-from .engine import Policy, STATE_SCHEMA, VolitionEngine
+from .engine import GOAL_COMPLETION_CONTRACT, Policy, STATE_SCHEMA, VolitionEngine
+from .goal_completion import (
+    AdmittedGoalCompletion,
+    GoalCompletionClaim,
+    GoalCompletionVerifier,
+)
 from .meso_bridge import MesoIntentBridge, MesoIntentEvidence
 from .models import (
     ChoiceClass,
@@ -58,6 +63,10 @@ __all__ = [
     "CognitionRequest",
     "DriveContribution",
     "DriveKind",
+    "AdmittedGoalCompletion",
+    "GoalCompletionClaim",
+    "GoalCompletionVerifier",
+    "GOAL_COMPLETION_CONTRACT",
     "Goal",
     "HawkesKernel",
     "MartingaleResidual",
