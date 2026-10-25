@@ -250,6 +250,10 @@ class VolitionEngine:
         self._events: list[TransitionEvent] = []
         # Ephemeral one-evaluation custody, intentionally excluded from snapshots.
         self._issued_wants: list[tuple[Want, Want]] = []
+        # A recorded Choice remains historical evidence, but is adoptable only
+        # in its originating evaluation epoch and only once. Restores fail
+        # closed rather than resurrecting an unverifiable pending decision.
+        self._pending_choice_ids: set[str] = set()
 
     @property
     def elapsed_seconds(self) -> float:
@@ -306,6 +310,7 @@ class VolitionEngine:
 
     def evaluate(self, signals: list[Signal]) -> list[Want]:
         self._issued_wants = []
+        self._pending_choice_ids.clear()
         grouped: dict[str, list[Signal]] = {}
         for signal in signals:
             _validated_signal(signal)
@@ -402,6 +407,7 @@ class VolitionEngine:
             source=source,
         )
         self._choices[choice.choice_id] = choice
+        self._pending_choice_ids.add(choice.choice_id)
         self._emit(
             "CHOICE_RECORDED",
             choice.want_target,
@@ -416,6 +422,9 @@ class VolitionEngine:
         choice = self._choices.get(choice_id)
         if choice is None:
             raise ValueError("unknown choice")
+        if choice_id not in self._pending_choice_ids:
+            raise ValueError("stale or consumed choice requires fresh evaluation")
+        self._pending_choice_ids.clear()
         self._issued_wants = []
         self._goal_counter += 1
         goal = Goal(
@@ -525,6 +534,7 @@ class VolitionEngine:
         """Shape satiation only; target-only scalar reports cannot complete goals."""
         amount = _unit(amount)
         self._issued_wants = []
+        self._pending_choice_ids.clear()
         self._satiation[target] = _unit(self._satiation.get(target, 0.0) + amount)
         self._emit("SATISFACTION_RECORDED", target, amount=amount, admission="unverified_scalar")
 
@@ -570,6 +580,7 @@ class VolitionEngine:
         ):
             raise ValueError("goal completion does not match exact active goal")
         self._issued_wants = []
+        self._pending_choice_ids.clear()
         self._emit("GOAL_COMPLETED", active.target, **details)
         self._active_goal = None
         self._endogenous_turns = 0
@@ -585,6 +596,7 @@ class VolitionEngine:
             self._elapsed_seconds + seconds, name="accumulated elapsed time"
         )
         self._issued_wants = []
+        self._pending_choice_ids.clear()
         self._elapsed_seconds = new_elapsed
         half_life = self.policy.satiation_half_life_seconds
         if half_life <= 0:
@@ -603,6 +615,7 @@ class VolitionEngine:
         if self._endogenous_turns >= self.policy.endogenous_turn_budget:
             return None
         self._issued_wants = []
+        self._pending_choice_ids.clear()
         self._endogenous_turns += 1
         request = CognitionRequest(
             goal_id=self._active_goal.goal_id,
