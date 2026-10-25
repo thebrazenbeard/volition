@@ -95,6 +95,42 @@ request = engine.request_cognition()
 
 The cognition request is a reason to think again. It is not authorization to perform an external effect.
 
+## Typed and numeric input boundary
+
+`VolitionEngine.evaluate()` accepts `Signal` instances whose `kind` and
+`provenance` are actual `DriveKind` and `ProvenanceClass` members. Raw strings
+that merely equal enum values are rejected: otherwise identity-based historical
+currentness and drive-family calculations could be bypassed. All signal numeric
+fields must be actual numeric types and finite; ordinary finite magnitudes retain
+their existing bounded clamping behavior. The five normalized policy thresholds
+and caps require values in `[0, 1]`; the time parameters and restored
+snapshot numeric state reject non-finite input and coerced Boolean/string
+numbers. Snapshot choice/goal scores and satiation must lie in `[0, 1]`.
+Signal target and source must be nonblank strings. `choose()` and `adopt()`
+accept only an unchanged `Want` object produced by the engine's latest
+`evaluate()` call, consumed at most once. Time, satiation, goal adoption, and
+cognition-budget changes invalidate outstanding evaluated wants. This is
+process-local evidence of arbitration, **not** a
+cryptographic proof of upstream signal custody or external action permission.
+Clock advances check the accumulated time for overflow before modifying state.
+The endogenous
+cognition budget must be a nonnegative integer.
+Restore additionally checks strictly typed nonnegative integer counters and
+event sequences; engine-generated choice/goal IDs must not exceed their
+counter. An active goal must preserve its originating Choice's target; its
+adoption score must match the Choice on revision 1. Later revisions require
+matching ordered `GOAL_REAPPRAISED` events, since genuine reappraisal can change
+the score. Goal/transition timestamps cannot exceed the restored logical clock
+or run backward.
+
+This validation protects the deterministic arbitration and persistence
+contracts. It does **not** authenticate a caller's claim that a current
+observation occurred, independently verify historical reappraisal, or grant
+permission to perform an external effect.
+
+`Volition Python CI` checks the full `pytest` suite on Python 3.11–3.13;
+this is source/build evidence, not a host runtime attestation.
+
 ## Research basis
 
 Internal sources include pre-active, conations, MESO-CRCT, Vera, the control plane, empathy, Semantic Atlas, DeepMemory, Selfimage, Temporal, and Project Runner. Sexuality/Orgasm contribute only abstract public-safe mechanisms; intimate material is not copied into Volition.

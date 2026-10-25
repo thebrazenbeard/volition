@@ -63,6 +63,11 @@ A Signal names:
 - whether historical evidence has received current reappraisal.
 
 Historical evidence without current reappraisal contributes zero activation.
+The engine rejects raw-string drive/provenance labels in place of actual typed
+enum members. Unvalidated strings previously bypassed `is`-based gates;
+consumer adapters must explicitly validate and construct typed evidence.
+Every numeric Signal input must be finite before any family is evaluated;
+otherwise NaN could be clamped into maximum motive strength.
 
 ## 3. Drive transforms
 
@@ -75,6 +80,10 @@ OPEN_LOOP and SELF_MODEL use bounded magnitude/confidence.
 PROTECTION is an inhibitory family with veto semantics.
 
 All admitted signal values are bounded to [0, 1].
+Finite out-of-range fields retain historical clamping behavior. Nonfinite
+values, Boolean/string numeric masquerades are errors, not maximum, minimum,
+or missing evidence. Policy thresholds/caps and restored scores/satiation must
+be within `[0, 1]`; accumulating finite clock steps cannot yield infinite time.
 
 ## 4. Family arbitration
 
@@ -122,6 +131,8 @@ An active goal can request a bounded number of cognition turns. The request:
 - stops after the configured budget.
 
 This is designed to connect to pre-active while preserving pre-active's independent run, capability, budget, and authority gates.
+Policy numeric thresholds and clocks reject NaN/infinity; cognition budgets
+must be nonnegative integers, preventing an unbounded loop by configuration.
 
 ## 9. Persistence
 
@@ -135,6 +146,19 @@ This is designed to connect to pre-active while preserving pre-active's independ
 - ordered transition events.
 
 Restore fails closed on unknown schema, malformed state, inconsistent counters, broken event sequence, unknown originating choice, or any choice/goal/event claiming effect authority.
+It also rejects nonfinite elapsed/event times, choice/goal scores and times,
+and satiation. This is structural state validation, not attestation that the
+stored goal was authorized or its provenance independently verified.
+Restore also cross-checks the active goal target against its originating Choice
+and rejects initial scores changed from that Choice. A revised goal can have a
+different score, but must be backed by contiguous matching reappraisal events.
+Those events do not record independently attested scoring inputs; snapshot
+authenticity remains external to this parser. Counters and event
+sequence must be actual integers, not booleans, strings, or truncated floats;
+engine-generated choice/goal IDs cannot exceed their counters. Restore rejects
+goal adoption in the future or nonmonotonic/out-of-clock transition timestamps.
+A valid sequence number alone is not enough to establish coherent temporal
+lineage.
 
 A snapshot is durable state material. It is not proof of runtime installation, current endorsement outside its own state contract, identity continuity, or phenomenology.
 
