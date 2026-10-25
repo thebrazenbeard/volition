@@ -49,7 +49,7 @@ def test_v3_rejects_corrupted_latest_scored_receipt(forged):
         (key, forged if key == "score" else value)
         for key, value in latest["details"]
     ]
-    with pytest.raises(ValueError, match="reappraisal score"):
+    with pytest.raises(ValueError, match="reappraisal score|event details"):
         VolitionEngine.from_snapshot(snapshot)
 
 
@@ -60,6 +60,38 @@ def test_v3_rejects_missing_latest_scored_receipt():
         (key, value) for key, value in latest["details"] if key != "score"
     ]
     with pytest.raises(ValueError, match="reappraisal score"):
+        VolitionEngine.from_snapshot(snapshot)
+
+
+@pytest.mark.parametrize("forged_detail", [
+    ("goal_id", "goal-9999"),
+    ("choice_id", "choice-9999"),
+    ("revision", "999"),
+    ("score", "0.1"),
+    ("surprise", {"nested": "untyped"}),
+    ("surprise", "unknown-field"),
+])
+def test_v3_rejects_duplicate_or_untyped_reappraisal_details(forged_detail):
+    snapshot = revised_engine().snapshot()
+    latest = reappraisal_events(snapshot)[-1]
+    latest["details"] = (forged_detail,) + latest["details"]
+    with pytest.raises(ValueError, match="snapshot event details"):
+        VolitionEngine.from_snapshot(snapshot)
+
+
+@pytest.mark.parametrize("malformed", ["goal_id", ("goal_id",), (1, "value"), ("x", None)])
+def test_v3_rejects_malformed_event_detail_pairs(malformed):
+    snapshot = revised_engine().snapshot()
+    event = snapshot["events"][0]
+    event["details"] = event["details"] + (malformed,)
+    with pytest.raises(ValueError, match="snapshot event details"):
+        VolitionEngine.from_snapshot(snapshot)
+
+
+def test_v3_rejects_unstructured_string_event_details():
+    snapshot = revised_engine().snapshot()
+    snapshot["events"][0]["details"] = "score=1.0"
+    with pytest.raises(ValueError, match="snapshot event details"):
         VolitionEngine.from_snapshot(snapshot)
 
 

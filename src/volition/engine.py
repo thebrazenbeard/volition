@@ -79,6 +79,29 @@ def _reappraisal_receipt_score(details: tuple[tuple[str, str], ...]) -> float:
     return score
 
 
+def _validated_event_details(value: object, *, event_kind: str) -> tuple[tuple[str, str], ...]:
+    """Keep persisted receipt fields unambiguous and consistent with emitted types."""
+    if not isinstance(value, (tuple, list)):
+        raise ValueError("snapshot event details must be an array of key/value pairs")
+    seen: set[str] = set()
+    pairs: list[tuple[str, str]] = []
+    for item in value:
+        if (
+            not isinstance(item, (tuple, list)) or len(item) != 2
+            or not all(isinstance(part, str) for part in item)
+            or not item[0] or item[0] in seen
+        ):
+            raise ValueError("snapshot event details require unique string pairs")
+        seen.add(item[0])
+        pairs.append((item[0], item[1]))
+    if event_kind == "GOAL_REAPPRAISED" and not (
+        seen == {"goal_id", "choice_id", "revision"}
+        or seen == {"goal_id", "choice_id", "revision", "score"}
+    ):
+        raise ValueError("snapshot event details contain invalid reappraisal fields")
+    return tuple(pairs)
+
+
 def _unit(value: float) -> float:
     return max(0.0, min(1.0, _finite(value, name="normalized value")))
 
@@ -608,7 +631,9 @@ class VolitionEngine:
                 kind=str(raw_event["kind"]),
                 target=str(raw_event["target"]),
                 at_seconds=_finite(raw_event["at_seconds"], name="snapshot event at_seconds"),
-                details=tuple(tuple(item) for item in raw_event.get("details", ())),
+                details=_validated_event_details(
+                    raw_event.get("details", ()), event_kind=str(raw_event["kind"])
+                ),
                 effect_authority=False,
             )
             if event.sequence != len(engine._events) + 1:

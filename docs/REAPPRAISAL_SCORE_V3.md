@@ -15,7 +15,9 @@ permission.
    goal. A goal at revision 2 or later requires exactly the contiguous ordered
    revision receipts, with the final time equal to `adopted_at_seconds` and
    the final recorded score equal to its active `adoption_score`.
-4. Missing, duplicate, untyped, noncanonical, nonfinite, or out-of-range
+4. All restored transition details require unique keys and strictly typed
+   string pairs; scored reappraisal details have exactly the declared keys.
+   Missing, duplicate, untyped, noncanonical, nonfinite, or out-of-range
    reappraisal score text fails closed. An altered active score and an altered
    scored receipt cannot silently disagree.
 5. This is an in-memory deterministic engine with no tool dispatch or effect
