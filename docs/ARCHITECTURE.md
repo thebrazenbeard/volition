@@ -81,7 +81,9 @@ PROTECTION is an inhibitory family with veto semantics.
 
 All admitted signal values are bounded to [0, 1].
 Finite out-of-range fields retain historical clamping behavior. Nonfinite
-values are errors, not maximum, minimum, or missing evidence.
+values, Boolean/string numeric masquerades are errors, not maximum, minimum,
+or missing evidence. Policy thresholds/caps and restored scores/satiation must
+be within `[0, 1]`; accumulating finite clock steps cannot yield infinite time.
 
 ## 4. Family arbitration
 

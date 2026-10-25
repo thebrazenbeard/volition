@@ -101,9 +101,13 @@ The cognition request is a reason to think again. It is not authorization to per
 `provenance` are actual `DriveKind` and `ProvenanceClass` members. Raw strings
 that merely equal enum values are rejected: otherwise identity-based historical
 currentness and drive-family calculations could be bypassed. All signal numeric
-fields must be finite; ordinary finite magnitudes retain their existing bounded
-clamping behavior. Engine clock advances, policy parameters, and restored
-snapshot numeric state likewise reject NaN and infinities. The endogenous
+fields must be actual numeric types and finite; ordinary finite magnitudes retain
+their existing bounded clamping behavior. The five normalized policy thresholds
+and caps require values in `[0, 1]`; the time parameters and restored
+snapshot numeric state reject non-finite input and coerced Boolean/string
+numbers. Snapshot choice/goal scores and satiation must lie in `[0, 1]`.
+Clock advances check the accumulated time for overflow before modifying state.
+The endogenous
 cognition budget must be a nonnegative integer.
 Restore additionally checks that an active goal names the same target as its
 referenced Choice and that goal/transition timestamps do not exceed the
@@ -113,6 +117,9 @@ This validation protects the deterministic arbitration and persistence
 contracts. It does **not** authenticate a caller's claim that a current
 observation occurred, independently verify historical reappraisal, or grant
 permission to perform an external effect.
+
+`Volition Python CI` checks the full `pytest` suite on Python 3.11–3.13;
+this is source/build evidence, not a host runtime attestation.
 
 ## Research basis
 

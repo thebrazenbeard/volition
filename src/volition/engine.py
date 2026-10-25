@@ -21,12 +21,21 @@ STATE_SCHEMA = "VOLITION_STATE_V2"
 
 
 def _finite(value: float, *, name: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"{name} must be finite and numeric")
     try:
         resolved = float(value)
     except (TypeError, ValueError, OverflowError) as exc:
         raise ValueError(f"{name} must be finite and numeric") from exc
     if not math.isfinite(resolved):
         raise ValueError(f"{name} must be finite")
+    return resolved
+
+
+def _bounded(value: float, *, name: str) -> float:
+    resolved = _finite(value, name=name)
+    if not 0.0 <= resolved <= 1.0:
+        raise ValueError(f"{name} must be within [0, 1]")
     return resolved
 
 
@@ -64,9 +73,10 @@ class Policy:
     def __post_init__(self) -> None:
         for field_name in (
             "want_threshold", "protection_veto", "switch_margin", "social_cap",
-            "empowerment_cap", "satiation_half_life_seconds",
-            "goal_reappraisal_seconds",
+            "empowerment_cap",
         ):
+            _bounded(getattr(self, field_name), name=f"policy {field_name}")
+        for field_name in ("satiation_half_life_seconds", "goal_reappraisal_seconds"):
             _finite(getattr(self, field_name), name=f"policy {field_name}")
         if (not isinstance(self.endogenous_turn_budget, int)
                 or isinstance(self.endogenous_turn_budget, bool)
@@ -367,7 +377,10 @@ class VolitionEngine:
             raise ValueError("seconds must be non-negative")
         if seconds == 0:
             return
-        self._elapsed_seconds += seconds
+        new_elapsed = _finite(
+            self._elapsed_seconds + seconds, name="accumulated elapsed time"
+        )
+        self._elapsed_seconds = new_elapsed
         half_life = self.policy.satiation_half_life_seconds
         if half_life <= 0:
             self._satiation.clear()
@@ -440,7 +453,7 @@ class VolitionEngine:
             choice = ChoiceRecord(
                 choice_id=str(raw_choice["choice_id"]),
                 want_target=str(raw_choice["want_target"]),
-                want_score=_finite(raw_choice["want_score"], name="snapshot choice score"),
+                want_score=_bounded(raw_choice["want_score"], name="snapshot choice score"),
                 choice_class=ChoiceClass(str(raw_choice["choice_class"])),
                 source=str(raw_choice["source"]),
                 effect_authority=False,
@@ -454,8 +467,12 @@ class VolitionEngine:
             if not isinstance(raw_goal, dict) or raw_goal.get("effect_authority") is not False:
                 raise ValueError("snapshot goal violates authority boundary")
             goal_fields = dict(raw_goal)
-            for name in ("adoption_score", "adopted_at_seconds"):
-                goal_fields[name] = _finite(goal_fields[name], name=f"snapshot goal {name}")
+            goal_fields["adoption_score"] = _bounded(
+                goal_fields["adoption_score"], name="snapshot goal adoption_score"
+            )
+            goal_fields["adopted_at_seconds"] = _finite(
+                goal_fields["adopted_at_seconds"], name="snapshot goal adopted_at_seconds"
+            )
             engine._active_goal = Goal(**goal_fields)
             if engine._active_goal.choice_id not in engine._choices:
                 raise ValueError("snapshot active goal has unknown choice")
@@ -477,7 +494,7 @@ class VolitionEngine:
         if not isinstance(raw_satiation, dict):
             raise ValueError("snapshot satiation is invalid")
         engine._satiation = {
-            str(key): _unit(float(value))
+            str(key): _bounded(value, name=f"snapshot satiation {key}")
             for key, value in raw_satiation.items()
         }
         engine._elapsed_seconds = _finite(

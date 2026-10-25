@@ -158,3 +158,47 @@ def test_snapshot_restore_rejects_future_or_reordered_transition_receipts():
     snapshot["events"][-1]["at_seconds"] = -1.0
     with pytest.raises(ValueError, match="event time is not monotonic"):
         VolitionEngine.from_snapshot(snapshot)
+
+
+@pytest.mark.parametrize("value", [True, False, "0.5", "1", None])
+def test_numeric_fields_reject_bool_string_or_null_coercion(value):
+    engine = VolitionEngine()
+    with pytest.raises(ValueError, match="numeric"):
+        engine.evaluate([valid_signal(magnitude=value)])
+    with pytest.raises(ValueError, match="numeric"):
+        Policy(want_threshold=value)
+    with pytest.raises(ValueError, match="numeric"):
+        engine.advance(value)
+
+
+@pytest.mark.parametrize("field", [
+    "want_threshold", "protection_veto", "switch_margin", "social_cap", "empowerment_cap",
+])
+@pytest.mark.parametrize("invalid", [-0.01, 1.01])
+def test_unit_policy_controls_reject_out_of_range_thresholds(field, invalid):
+    with pytest.raises(ValueError, match=r"within \[0, 1\]"):
+        Policy(**{field: invalid})
+
+
+@pytest.mark.parametrize("field", ["choice", "goal", "satiation"])
+def test_snapshot_restore_rejects_out_of_range_want_goal_satiation(field):
+    engine = VolitionEngine()
+    engine.tick([valid_signal(kind=DriveKind.OPEN_LOOP)])
+    snapshot = engine.snapshot()
+    if field == "choice":
+        snapshot["choices"][0]["want_score"] = 1e100
+    elif field == "goal":
+        snapshot["active_goal"]["adoption_score"] = 1e100
+    else:
+        snapshot["satiation"] = {"records": -1.0}
+    with pytest.raises(ValueError, match=r"within \[0, 1\]"):
+        VolitionEngine.from_snapshot(snapshot)
+
+
+def test_clock_advance_rejects_accumulation_overflow_atomically():
+    engine = VolitionEngine()
+    engine.advance(1e308)
+    snapshot = engine.snapshot()
+    with pytest.raises(ValueError, match="finite"):
+        engine.advance(1e308)
+    assert engine.snapshot() == snapshot
