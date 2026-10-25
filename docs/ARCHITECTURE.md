@@ -136,7 +136,7 @@ must be nonnegative integers, preventing an unbounded loop by configuration.
 
 ## 9. Persistence
 
-`VOLITION_STATE_V2` snapshots contain:
+Current `VOLITION_STATE_V3` snapshots contain:
 - policy;
 - recorded choices and choice counter;
 - active goal and goal counter;
@@ -151,9 +151,12 @@ and satiation. This is structural state validation, not attestation that the
 stored goal was authorized or its provenance independently verified.
 Restore also cross-checks the active goal target against its originating Choice
 and rejects initial scores changed from that Choice. A revised goal can have a
-different score, but must be backed by contiguous matching reappraisal events.
-Those events do not record independently attested scoring inputs; snapshot
-authenticity remains external to this parser. Counters and event
+different score, but must be backed by contiguous matching reappraisal events
+whose finite, bounded recorded score agrees with active state. Legacy V2
+snapshots with revised active goals are rejected as unverifiable; unrevised or
+inactive V2 states can be loaded and re-exported as V3. Those event scores do
+not independently attest scoring inputs; snapshot authenticity remains external
+to this parser. Counters and event
 sequence must be actual integers, not booleans, strings, or truncated floats;
 engine-generated choice/goal IDs cannot exceed their counters. Restore rejects
 goal adoption in the future or nonmonotonic/out-of-clock transition timestamps.

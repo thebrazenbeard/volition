@@ -18,7 +18,8 @@ from .models import (
 )
 
 
-STATE_SCHEMA = "VOLITION_STATE_V2"
+STATE_SCHEMA = "VOLITION_STATE_V3"
+LEGACY_STATE_SCHEMA = "VOLITION_STATE_V2"
 
 
 def _finite(value: float, *, name: str) -> float:
@@ -61,6 +62,21 @@ def _generated_id_number(value: object, *, prefix: str) -> int:
     if number < 1 or value != f"{prefix}-{number:04d}":
         raise ValueError(f"snapshot {prefix} ID is invalid")
     return number
+
+
+def _reappraisal_receipt_score(details: tuple[tuple[str, str], ...]) -> float:
+    """Decode only the exact float text emitted by this engine's V3 receipt."""
+    candidates = [value for key, value in details if key == "score"]
+    if len(candidates) != 1 or not isinstance(candidates[0], str):
+        raise ValueError("snapshot reappraisal score receipt is missing or malformed")
+    try:
+        score = float(candidates[0])
+    except (ValueError, TypeError, OverflowError) as exc:
+        raise ValueError("snapshot reappraisal score receipt is invalid") from exc
+    score = _bounded(score, name="snapshot reappraisal score")
+    if str(score) != candidates[0]:
+        raise ValueError("snapshot reappraisal score receipt is noncanonical")
+    return score
 
 
 def _unit(value: float) -> float:
@@ -362,6 +378,7 @@ class VolitionEngine:
             goal_id=previous.goal_id,
             choice_id=previous.choice_id,
             revision=self._active_goal.revision,
+            score=self._active_goal.adoption_score,
         )
 
     def tick(self, signals: list[Signal]) -> Goal | None:
@@ -484,7 +501,8 @@ class VolitionEngine:
 
     @classmethod
     def from_snapshot(cls, snapshot: dict[str, object]) -> "VolitionEngine":
-        if snapshot.get("schema") != STATE_SCHEMA:
+        schema = snapshot.get("schema")
+        if schema not in (STATE_SCHEMA, LEGACY_STATE_SCHEMA):
             raise ValueError("unsupported or missing Volition state schema")
         raw_policy = snapshot.get("policy")
         if not isinstance(raw_policy, dict):
@@ -533,6 +551,8 @@ class VolitionEngine:
                 raise ValueError("snapshot goal target does not match choice")
             if revision == 1 and engine._active_goal.adoption_score != linked_choice.want_score:
                 raise ValueError("snapshot goal adoption score does not match choice")
+            if schema == LEGACY_STATE_SCHEMA and revision > 1:
+                raise ValueError("legacy V2 reappraisal score is unverifiable; current reappraisal required")
 
         engine._goal_counter = _nonnegative_integer(
             snapshot.get("goal_counter", 0), name="snapshot goal counter"
@@ -600,7 +620,7 @@ class VolitionEngine:
             ):
                 raise ValueError("snapshot event time is not monotonic")
             engine._events.append(event)
-        if engine._active_goal is not None and engine._active_goal.revision > 1:
+        if engine._active_goal is not None:
             goal = engine._active_goal
             reappraisals = [
                 event for event in engine._events
@@ -609,13 +629,21 @@ class VolitionEngine:
                 and dict(event.details).get("goal_id") == goal.goal_id
                 and dict(event.details).get("choice_id") == goal.choice_id
             ]
-            if (
-                len(reappraisals) != goal.revision - 1
-                or any(
-                    dict(event.details).get("revision") != str(index)
-                    for index, event in enumerate(reappraisals, start=2)
-                )
-                or reappraisals[-1].at_seconds != goal.adopted_at_seconds
-            ):
-                raise ValueError("snapshot goal revision has no matching reappraisal event lineage")
+            if goal.revision == 1:
+                if reappraisals:
+                    raise ValueError("snapshot goal revision contradicts historical reappraisal events")
+            else:
+                if (
+                    len(reappraisals) != goal.revision - 1
+                    or any(
+                        dict(event.details).get("revision") != str(index)
+                        for index, event in enumerate(reappraisals, start=2)
+                    )
+                    or reappraisals[-1].at_seconds != goal.adopted_at_seconds
+                ):
+                    raise ValueError("snapshot goal revision has no matching reappraisal event lineage")
+                for event in reappraisals:
+                    recorded_score = _reappraisal_receipt_score(event.details)
+                    if event is reappraisals[-1] and recorded_score != goal.adoption_score:
+                        raise ValueError("snapshot reappraisal score disagrees with active goal")
         return engine

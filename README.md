@@ -16,7 +16,7 @@ The current work branch implements:
 - explicit Choice records distinguishing SELF_AUTHORED, USER_DIRECTED, POLICY_DERIVED, and MODEL_PROPOSED;
 - goal hysteresis, satiation/recovery, and periodic current reappraisal;
 - bounded ENDOGENOUS cognition requests;
-- `VOLITION_STATE_V2` snapshot/restore with choice provenance;
+- `VOLITION_STATE_V3` snapshot/restore with choice provenance and scored reappraisal receipts;
 - ordered transition receipts;
 - Temporal Watch V1 bridge for canonical UTC chronology, stable event IDs, and event provenance;
 - Temporal-driven engine clock for goal reappraisal and satiation/currentness timing;
@@ -119,9 +119,13 @@ Restore additionally checks strictly typed nonnegative integer counters and
 event sequences; engine-generated choice/goal IDs must not exceed their
 counter. An active goal must preserve its originating Choice's target; its
 adoption score must match the Choice on revision 1. Later revisions require
-matching ordered `GOAL_REAPPRAISED` events, since genuine reappraisal can change
-the score. Goal/transition timestamps cannot exceed the restored logical clock
-or run backward.
+matching ordered `GOAL_REAPPRAISED` events **with scores** matching the restored
+goal, since genuine reappraisal can change its score. Legacy V2 snapshots with
+an active goal past revision 1 now fail closed: their events did not record
+scores, so the revised score cannot be verified. Legacy V2 unrevised or
+inactive snapshots remain readable and re-export under V3. See
+`docs/REAPPRAISAL_SCORE_V3.md`. Goal/transition timestamps cannot exceed the
+restored logical clock or run backward.
 
 This validation protects the deterministic arbitration and persistence
 contracts. It does **not** authenticate a caller's claim that a current
