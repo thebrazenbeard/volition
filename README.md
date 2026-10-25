@@ -95,6 +95,25 @@ request = engine.request_cognition()
 
 The cognition request is a reason to think again. It is not authorization to perform an external effect.
 
+## Typed and numeric input boundary
+
+`VolitionEngine.evaluate()` accepts `Signal` instances whose `kind` and
+`provenance` are actual `DriveKind` and `ProvenanceClass` members. Raw strings
+that merely equal enum values are rejected: otherwise identity-based historical
+currentness and drive-family calculations could be bypassed. All signal numeric
+fields must be finite; ordinary finite magnitudes retain their existing bounded
+clamping behavior. Engine clock advances, policy parameters, and restored
+snapshot numeric state likewise reject NaN and infinities. The endogenous
+cognition budget must be a nonnegative integer.
+Restore additionally checks that an active goal names the same target as its
+referenced Choice and that goal/transition timestamps do not exceed the
+restored logical clock or run backward.
+
+This validation protects the deterministic arbitration and persistence
+contracts. It does **not** authenticate a caller's claim that a current
+observation occurred, independently verify historical reappraisal, or grant
+permission to perform an external effect.
+
 ## Research basis
 
 Internal sources include pre-active, conations, MESO-CRCT, Vera, the control plane, empathy, Semantic Atlas, DeepMemory, Selfimage, Temporal, and Project Runner. Sexuality/Orgasm contribute only abstract public-safe mechanisms; intimate material is not copied into Volition.
