@@ -127,7 +127,8 @@ def test_v2_unrevised_goal_remains_compatible_without_silent_promotion():
 
 def test_v2_unscored_historical_reappraisal_without_active_goal_remains_inert():
     engine = revised_engine()
-    engine.record_satisfaction("rest", 0.8)
+    engine.advance(2)
+    engine.tick([])  # Current-reappraisal suspension, not scalar satisfaction.
     assert engine.active_goal is None
     snapshot = engine.snapshot()
     snapshot["schema"] = "VOLITION_STATE_V2"

@@ -115,12 +115,21 @@ A Goal can be adopted only from a recorded Choice.
 
 Goals use:
 - hysteresis: a slightly stronger alternative does not cause thrashing;
-- satiation: satisfaction reduces repeated pressure and decays over time;
+- satiation: caller-provided scalar shaping reduces repeated pressure and decays
+  over time, but cannot by itself complete any goal;
 - currentness horizon: a persistent goal must receive current reappraisal after a bounded interval or suspend;
 - protection veto: current protective evidence can suspend an active goal;
 - revisioned reappraisal while preserving the originating choice ID.
 
 Goals carry `effect_authority=False`.
+
+Goal completion is a separate versioned exact-goal caller-admission contract.
+An admitted outcome must name the active goal, originating choice, revision,
+target, result and evidence. A target-only `record_satisfaction` scalar never
+emits `GOAL_COMPLETED`. Persistent completion events are replay-deduplicated
+and terminal: restore cannot resurrect a previously completed goal. Admission
+does not independently authenticate the caller or source; see
+`docs/GOAL_COMPLETION_ADMISSION_V1.md`.
 
 ## 8. Endogenous cognition
 

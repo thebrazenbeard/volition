@@ -95,6 +95,21 @@ request = engine.request_cognition()
 
 The cognition request is a reason to think again. It is not authorization to perform an external effect.
 
+## Versioned goal-completion boundary
+
+As of package `0.11.0`, `record_satisfaction(target, amount)` changes only
+bounded, decaying target satiation. It **never** completes a goal from a
+target-only scalar. `complete_goal(...)` instead requires an exact
+`AdmittedGoalCompletion` with current goal ID, choice ID, goal revision, target,
+unique outcome event ID, result receipt, evidence reference, and caller-admitted
+current-source provenance. Replays are checked against persisted transition
+events; completed goals cannot be restored as active. This contract grants no
+tool authority and provides **caller-selected admission, not independent
+source authentication**. Raw Pre-Active outcome candidates are not admitted.
+
+See `docs/GOAL_COMPLETION_ADMISSION_V1.md` for the acceptance criteria and
+remaining evidence-custody limitations.
+
 ## Typed and numeric input boundary
 
 `VolitionEngine.evaluate()` accepts `Signal` instances whose `kind` and

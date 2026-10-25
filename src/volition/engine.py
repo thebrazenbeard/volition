@@ -4,6 +4,7 @@ import math
 from copy import deepcopy
 from dataclasses import asdict, dataclass
 
+from .goal_completion import AdmittedGoalCompletion
 from .models import (
     ChoiceClass,
     ChoiceRecord,
@@ -20,6 +21,7 @@ from .models import (
 
 STATE_SCHEMA = "VOLITION_STATE_V3"
 LEGACY_STATE_SCHEMA = "VOLITION_STATE_V2"
+GOAL_COMPLETION_CONTRACT = "CALLER_ADMITTED_GOAL_COMPLETION_V1"
 
 
 def _finite(value: float, *, name: str) -> float:
@@ -100,6 +102,88 @@ def _validated_event_details(value: object, *, event_kind: str) -> tuple[tuple[s
     ):
         raise ValueError("snapshot event details contain invalid reappraisal fields")
     return tuple(pairs)
+
+
+def _validate_completion_history(engine: "VolitionEngine") -> None:
+    """Bind terminal receipts to earlier adopted goals before state is resumed."""
+    adopted: dict[str, tuple[str, str]] = {}
+    revisions: dict[str, int] = {}
+    completed: set[str] = set()
+    legacy_terminated: dict[str, str] = {}
+    credited_outcomes: set[str] = set()
+    historical_active: str | None = None
+    for event in engine._events:
+        fields = dict(event.details)
+        if event.kind == "GOAL_ADOPTED":
+            goal_id = fields.get("goal_id")
+            choice_id = fields.get("choice_id")
+            if not goal_id or not choice_id or goal_id in adopted:
+                raise ValueError("snapshot goal adoption lineage is invalid")
+            choice = engine._choices.get(choice_id)
+            if choice is None or choice.want_target != event.target:
+                raise ValueError("snapshot goal adoption lineage lacks matching choice")
+            adopted[goal_id] = (choice_id, event.target)
+            revisions[goal_id] = 1
+            historical_active = goal_id
+        elif event.kind == "GOAL_REAPPRAISED":
+            goal_id = fields.get("goal_id")
+            if (
+                goal_id not in adopted or goal_id in completed
+                or adopted[goal_id] != (fields.get("choice_id"), event.target)
+                or fields.get("revision") != str(revisions[goal_id] + 1)
+            ):
+                raise ValueError("snapshot goal reappraisal event lineage is invalid")
+            if goal_id != historical_active:
+                raise ValueError("snapshot reappraised goal is not the historically active goal")
+            revisions[goal_id] += 1
+        elif event.kind in {"GOAL_SUSPENDED", "GOAL_REPLACED"}:
+            # Historical receipts lack a goal ID, but the preceding adoption
+            # sequence identifies the active goal when that history is present.
+            if historical_active is None:
+                raise ValueError("snapshot legacy terminal goal lacks an active adoption")
+            if adopted[historical_active][1] != event.target:
+                raise ValueError("snapshot legacy terminal goal target is inconsistent")
+            legacy_terminated[historical_active] = event.kind.lower().removeprefix("goal_")
+            historical_active = None
+        elif event.kind == "GOAL_COMPLETED":
+            goal_id = fields.get("goal_id")
+            outcome_event_id = fields.get("outcome_event_id")
+            if outcome_event_id is not None and outcome_event_id in credited_outcomes:
+                raise ValueError("snapshot duplicate goal completion outcome event")
+            if (
+                goal_id not in adopted or goal_id in completed
+                or adopted[goal_id] != (fields.get("choice_id"), event.target)
+            ):
+                raise ValueError("snapshot goal completion lineage is invalid")
+            if goal_id != historical_active:
+                raise ValueError("snapshot completed goal is not the historically active goal")
+            if "completion_contract" in fields:
+                required = {
+                    "outcome_event_id", "goal_id", "choice_id", "goal_revision",
+                    "result_receipt_id", "evidence_ref", "source_ref",
+                    "provenance", "verifier_id", "completion_contract",
+                }
+                if (
+                    set(fields) != required
+                    or fields["completion_contract"] != GOAL_COMPLETION_CONTRACT
+                    or fields["goal_revision"] != str(revisions[goal_id])
+                    or not fields["outcome_event_id"]
+                ):
+                    raise ValueError("snapshot goal completion lineage has invalid receipt")
+                credited_outcomes.add(fields["outcome_event_id"])
+            elif set(fields) != {"goal_id", "choice_id"}:
+                raise ValueError("snapshot goal completion lineage has invalid legacy receipt")
+            completed.add(goal_id)
+            if historical_active == goal_id:
+                historical_active = None
+    if engine._active_goal is not None and engine._active_goal.goal_id in completed:
+        raise ValueError("snapshot completed goal cannot be restored active")
+    if engine._active_goal is not None and engine._active_goal.goal_id in legacy_terminated:
+        kind = legacy_terminated[engine._active_goal.goal_id]
+        raise ValueError(f"snapshot {kind} goal cannot be restored active")
+    restored_active_id = engine._active_goal.goal_id if engine._active_goal is not None else None
+    if restored_active_id != historical_active:
+        raise ValueError("snapshot active goal disagrees with historical adoption lifecycle")
 
 
 def _unit(value: float) -> float:
@@ -438,23 +522,58 @@ class VolitionEngine:
         return self._active_goal
 
     def record_satisfaction(self, target: str, amount: float) -> None:
+        """Shape satiation only; target-only scalar reports cannot complete goals."""
         amount = _unit(amount)
         self._issued_wants = []
         self._satiation[target] = _unit(self._satiation.get(target, 0.0) + amount)
-        self._emit("SATISFACTION_RECORDED", target, amount=amount)
-        if (
-            self._active_goal is not None
-            and self._active_goal.target == target
-            and amount >= 0.7
+        self._emit("SATISFACTION_RECORDED", target, amount=amount, admission="unverified_scalar")
+
+    def complete_goal(self, admitted: AdmittedGoalCompletion) -> bool:
+        """Complete only the exact active goal revision backed by caller admission.
+
+        This checks claim lineage and replay, not independent source authenticity.
+        No tools or external effects are dispatched.
+        """
+        if not isinstance(admitted, AdmittedGoalCompletion):
+            raise TypeError("goal completion requires caller-admitted evidence")
+        claim = admitted.claim
+        details = {
+            "outcome_event_id": claim.outcome_event_id,
+            "goal_id": claim.goal_id,
+            "choice_id": claim.choice_id,
+            "goal_revision": str(claim.goal_revision),
+            "result_receipt_id": claim.result_receipt_id,
+            "evidence_ref": claim.evidence_ref,
+            "source_ref": claim.source_ref,
+            "provenance": claim.provenance.value,
+            "verifier_id": admitted.verifier_id,
+            "completion_contract": GOAL_COMPLETION_CONTRACT,
+        }
+        for event in self._events:
+            if event.kind != "GOAL_COMPLETED":
+                continue
+            prior = dict(event.details)
+            if prior.get("outcome_event_id") != claim.outcome_event_id:
+                continue
+            if event.target == claim.target and all(
+                prior.get(key) == value for key, value in details.items()
+            ):
+                return False
+            raise ValueError("goal completion outcome event conflicts with prior credit")
+
+        active = self._active_goal
+        if active is None or (
+            active.goal_id != claim.goal_id
+            or active.choice_id != claim.choice_id
+            or active.revision != claim.goal_revision
+            or active.target != claim.target
         ):
-            self._emit(
-                "GOAL_COMPLETED",
-                target,
-                goal_id=self._active_goal.goal_id,
-                choice_id=self._active_goal.choice_id,
-            )
-            self._active_goal = None
-            self._endogenous_turns = 0
+            raise ValueError("goal completion does not match exact active goal")
+        self._issued_wants = []
+        self._emit("GOAL_COMPLETED", active.target, **details)
+        self._active_goal = None
+        self._endogenous_turns = 0
+        return True
 
     def advance(self, seconds: float) -> None:
         seconds = _finite(seconds, name="advance seconds")
@@ -645,6 +764,7 @@ class VolitionEngine:
             ):
                 raise ValueError("snapshot event time is not monotonic")
             engine._events.append(event)
+        _validate_completion_history(engine)
         if engine._active_goal is not None:
             goal = engine._active_goal
             reappraisals = [
