@@ -7,12 +7,14 @@ immutable claim. It cannot authenticate the caller, outcome, or source system.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from itertools import islice
 from typing import Iterable
 
 from .models import ProvenanceClass
 
 
 _ADMISSION_TOKEN = object()
+MAX_GOAL_COMPLETION_CLAIMS = 256
 _CURRENT_EXTERNAL = frozenset({
     ProvenanceClass.CURRENT_OBSERVATION,
     ProvenanceClass.CURRENT_STATEMENT,
@@ -85,10 +87,12 @@ class GoalCompletionVerifier:
 
     def __init__(self, accepted: Iterable[GoalCompletionClaim], *, verifier_id: str):
         _text(verifier_id, field="verifier_id")
-        claims = frozenset(accepted)
-        if not all(isinstance(claim, GoalCompletionClaim) for claim in claims):
+        supplied = tuple(islice(accepted, MAX_GOAL_COMPLETION_CLAIMS + 1))
+        if len(supplied) > MAX_GOAL_COMPLETION_CLAIMS:
+            raise ValueError("accepted goal completion claim capacity exceeded")
+        if not all(isinstance(claim, GoalCompletionClaim) for claim in supplied):
             raise TypeError("accepted goal completion claims must be typed")
-        self._accepted = claims
+        self._accepted = frozenset(supplied)
         self._verifier_id = verifier_id
 
     def admit(self, claim: GoalCompletionClaim) -> AdmittedGoalCompletion:

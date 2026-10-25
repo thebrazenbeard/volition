@@ -18,7 +18,12 @@ of amount. A positive scalar does not prove a goal was achieved.
 positive goal revision, target, result receipt ID, evidence reference,
 current-source provenance, and source reference. `GoalCompletionVerifier`
 matches a caller-supplied exact-value allowlist and issues
-`AdmittedGoalCompletion`. The wrapper cannot be manufactured through its
+`AdmittedGoalCompletion`. Its caller-supplied iterable is bounded to **256
+supplied claim items** (`MAX_GOAL_COMPLETION_CLAIMS`), not 256 distinct claims:
+the 257th item causes a controlled `ValueError` before allowlist construction.
+This also terminates consumption of a generator that keeps yielding items;
+it cannot impose a time limit on an iterator that blocks inside `next()`.
+The wrapper cannot be manufactured through its
 public constructor without a module-private token. **This is a reference
 process-level guard, not independently administered source identity or a
 cryptographic security boundary.** A malicious Python caller can still claim

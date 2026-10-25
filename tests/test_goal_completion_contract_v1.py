@@ -1,6 +1,7 @@
 """Only exact caller-admitted outcome lineage may complete the current goal."""
 
 from dataclasses import replace
+from itertools import count
 
 import pytest
 
@@ -13,6 +14,9 @@ from volition import (
     Signal,
     VolitionEngine,
 )
+from volition.goal_completion import MAX_GOAL_COMPLETION_CLAIMS
+
+_EXPECTED_MAX_CLAIMS = 256
 
 
 def motive():
@@ -38,6 +42,40 @@ def claim(goal, *, outcome_event_id="outcome:1", **overrides):
 
 def admit(item):
     return GoalCompletionVerifier((item,), verifier_id="caller:outcome-review").admit(item)
+
+
+def test_verifier_stops_unbounded_claim_generator_at_capacity():
+    goal = VolitionEngine().tick([motive()])
+
+    def hostile_generator():
+        for index in count():
+            if index > _EXPECTED_MAX_CLAIMS + 2:
+                raise AssertionError("verifier over-consumed an unbounded generator")
+            yield claim(goal, outcome_event_id=f"outcome:{index}")
+
+    with pytest.raises(ValueError, match="capacity"):
+        GoalCompletionVerifier(hostile_generator(), verifier_id="caller:outcome-review")
+
+
+def test_verifier_rejects_a_finite_over_capacity_allowlist():
+    goal = VolitionEngine().tick([motive()])
+    accepted = tuple(
+        claim(goal, outcome_event_id=f"outcome:{index}")
+        for index in range(_EXPECTED_MAX_CLAIMS + 1)
+    )
+    with pytest.raises(ValueError, match="capacity"):
+        GoalCompletionVerifier(accepted, verifier_id="caller:outcome-review")
+
+
+def test_verifier_accepts_exact_capacity_and_preserves_admission():
+    assert MAX_GOAL_COMPLETION_CLAIMS == _EXPECTED_MAX_CLAIMS
+    goal = VolitionEngine().tick([motive()])
+    accepted = tuple(
+        claim(goal, outcome_event_id=f"outcome:{index}")
+        for index in range(_EXPECTED_MAX_CLAIMS)
+    )
+    verifier = GoalCompletionVerifier(iter(accepted), verifier_id="caller:outcome-review")
+    assert verifier.admit(accepted[-1]).claim == accepted[-1]
 
 
 def test_stale_same_target_scalar_cannot_complete_new_goal():
