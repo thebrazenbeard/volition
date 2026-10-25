@@ -127,6 +127,10 @@ accept only an unchanged `Want` object produced by the engine's latest
 cognition-budget changes invalidate outstanding evaluated wants. This is
 process-local evidence of arbitration, **not** a
 cryptographic proof of upstream signal custody or external action permission.
+`adopt_choice()` additionally requires a recorded Choice that is still pending
+from the current evaluation and has not been adopted before. A new evaluation,
+state advancement, or goal adoption invalidates pending choices; restored
+snapshots retain Choice history but require fresh arbitration before adoption.
 Clock advances check the accumulated time for overflow before modifying state.
 The endogenous
 cognition budget must be a nonnegative integer.
