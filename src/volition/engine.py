@@ -107,14 +107,26 @@ def _validated_event_details(value: object, *, event_kind: str) -> tuple[tuple[s
 def _validate_completion_history(engine: "VolitionEngine") -> None:
     """Bind terminal receipts to earlier adopted goals before state is resumed."""
     adopted: dict[str, tuple[str, str]] = {}
+    adopted_choice_ids: set[str] = set()
     revisions: dict[str, int] = {}
     completed: set[str] = set()
     legacy_terminated: dict[str, str] = {}
     credited_outcomes: set[str] = set()
     historical_active: str | None = None
+    recorded_choices: set[str] = set()
     for event in engine._events:
         fields = dict(event.details)
-        if event.kind == "GOAL_ADOPTED":
+        if event.kind == "CHOICE_RECORDED":
+            choice_id = fields.get("choice_id")
+            choice = engine._choices.get(choice_id)
+            if (choice is None or choice_id in recorded_choices
+                or event.target != choice.want_target
+                or fields.get("score") != str(choice.want_score)
+                or fields.get("choice_class") != choice.choice_class.value
+                or fields.get("source") != choice.source):
+                raise ValueError("snapshot choice contradicts recorded choice receipt")
+            recorded_choices.add(choice_id)
+        elif event.kind == "GOAL_ADOPTED":
             goal_id = fields.get("goal_id")
             choice_id = fields.get("choice_id")
             if not goal_id or not choice_id or goal_id in adopted:
@@ -122,7 +134,14 @@ def _validate_completion_history(engine: "VolitionEngine") -> None:
             choice = engine._choices.get(choice_id)
             if choice is None or choice.want_target != event.target:
                 raise ValueError("snapshot goal adoption lineage lacks matching choice")
+            if choice_id not in recorded_choices:
+                raise ValueError("snapshot goal adoption lacks preceding choice receipt")
+            if choice_id in adopted_choice_ids:
+                raise ValueError("snapshot goal adoption reuses a consumed choice")
+            if fields.get("score") != str(choice.want_score):
+                raise ValueError("snapshot goal adoption score contradicts recorded adoption receipt")
             adopted[goal_id] = (choice_id, event.target)
+            adopted_choice_ids.add(choice_id)
             revisions[goal_id] = 1
             historical_active = goal_id
         elif event.kind == "GOAL_REAPPRAISED":
