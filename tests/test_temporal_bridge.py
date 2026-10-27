@@ -108,3 +108,15 @@ def test_temporal_optional_fields_follow_temporal_validation_contract():
     bad_local['local_timestamp'] = '2026-10-06T10:00:05'
     with pytest.raises(ValueError):
         TemporalRecord.from_mapping(bad_local)
+
+
+def test_temporal_local_timestamp_must_identify_same_instant():
+    bad_offset = record(timestamp='2026-10-06T14:00:05Z')
+    bad_offset['local_timestamp'] = '2026-10-06T10:00:05-05:00'
+    with pytest.raises(ValueError, match='local_timestamp.*same instant'):
+        TemporalRecord.from_mapping(bad_offset)
+
+    # An ordinary offset representation of the same instant remains valid.
+    valid_offset = record(timestamp='2026-10-06T14:00:05Z')
+    valid_offset['local_timestamp'] = '2026-10-06T10:00:05-04:00'
+    assert TemporalRecord.from_mapping(valid_offset).local_timestamp == valid_offset['local_timestamp']

@@ -80,7 +80,9 @@ class TemporalRecord:
         if local_timestamp is not None:
             if not isinstance(local_timestamp, str):
                 raise ValueError("local_timestamp must be a string")
-            _parse_timestamp(local_timestamp)
+            local_instant = _parse_timestamp(local_timestamp)
+            if canonical_temporal_timestamp(local_instant) != timestamp:
+                raise ValueError("local_timestamp must represent the same instant as timestamp")
         raw_refs = value.get("refs", ())
         if not isinstance(raw_refs, (list, tuple)) or not all(
             isinstance(ref, str) and bool(ref) for ref in raw_refs
