@@ -16,6 +16,15 @@ from .goal_completion import (
     GoalCompletionVerifier,
 )
 from .meso_bridge import MesoIntentBridge, MesoIntentEvidence
+from .operational_drive import (
+    AdmittedObservation,
+    ModelWantProposal,
+    MOTIVATION_SCHEMA,
+    ObservationClaim,
+    ObservationVerifier,
+    OperationalMotivation,
+    PersistentWant,
+)
 from .models import (
     ChoiceClass,
     ChoiceRecord,
@@ -47,6 +56,13 @@ from .temporal import (
 )
 
 __all__ = [
+    "AdmittedObservation",
+    "ModelWantProposal",
+    "MOTIVATION_SCHEMA",
+    "ObservationClaim",
+    "ObservationVerifier",
+    "OperationalMotivation",
+    "PersistentWant",
     "ConationRecord",
     "ConationBridge",
     "MesoIntentEvidence",

@@ -84,7 +84,7 @@ class ConationBridge:
             raise ValueError('record must be a ConationRecord')
         if not isinstance(current, Signal):
             raise ValueError('current evidence must be a Signal')
-        if record.status in _NON_REANIMATABLE:
+        if record.status.strip().upper() in _NON_REANIMATABLE:
             raise ValueError('terminal or superseded conation requires a new current record')
         if current.provenance not in _CURRENT_PROVENANCE:
             raise ValueError('conation reappraisal requires fresh current evidence')

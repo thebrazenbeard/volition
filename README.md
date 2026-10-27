@@ -95,6 +95,58 @@ request = engine.request_cognition()
 
 The cognition request is a reason to think again. It is not authorization to perform an external effect.
 
+## Opt-in persistent operational motivation
+
+`OperationalMotivation` adds a replay-safe, serialized operational-want register
+without changing existing `VolitionEngine.tick()` callers. A model proposes a
+target and a drive family; an *external integration caller* supplies and
+allowlists a matching current observation. The observation, **not** model prose,
+determines urgency. The new goal's Choice is explicitly `MODEL_PROPOSED`, never
+`SELF_AUTHORED`. `effect_authority` remains false.
+
+```python
+from hashlib import sha256
+from volition import (
+    DriveKind, ModelWantProposal, ObservationClaim,
+    ObservationVerifier, OperationalMotivation,
+)
+
+evidence = b"observer-measured:unanswered-work-item:73"
+claim = ObservationClaim(
+    evidence_id="observer-event-73",
+    content_digest="sha256:" + sha256(evidence).hexdigest(),
+    target="resolve-work-item-73", kind=DriveKind.OPEN_LOOP,
+    magnitude=0.8, confidence=0.9, source_ref="trusted-observer:item-73",
+)
+# The host MUST independently verify the observation before creating this allowlist.
+admitted = ObservationVerifier([claim], verifier_id="operator:monitor").admit(claim)
+motivation = OperationalMotivation()
+goal = motivation.propose(ModelWantProposal(
+    proposal_id="model-proposal-73", target=claim.target,
+    kind=claim.kind, evidence_id=claim.evidence_id,
+    reason="bounded examination of the unresolved discrepancy",
+), admitted)
+request = motivation.request_cognition() if goal is not None else None
+state = motivation.snapshot()  # Persist atomically via the integrating host.
+restored = OperationalMotivation.from_snapshot(state)
+```
+
+Distinct evidence IDs **and** canonical content SHA-256 digests prevent
+replaying one observation as another drive family or newly numbered event.
+Repeated proposals yield no new goal/cognition trigger, including after a
+reappraisal horizon and snapshot restore. New observations lower or suspend
+stale goal urgency; a protection veto latches across restart until an
+independently caller-admitted *new* zero-protection observation clears it.
+Completion requires the existing exact `AdmittedGoalCompletion` contract via
+`motivation.complete(receipt)` and cannot resurrect the prior evidence.
+
+**Scope:** This is a local, host-opt-in decision and motivation primitive.
+It does not schedule itself, poll sensors, verify remote attestations, acquire
+authority, dispatch actions, or provide evidence of subjective desire. The
+caller allowlist provides chain-of-custody only at that caller's trust level;
+neither SHA-256 nor the presence of a verifier ID authenticates observations.
+The persistent replay ledger has a finite capacity and fails closed when full.
+
 ## Versioned goal-completion boundary
 
 As of package `0.11.0`, `record_satisfaction(target, amount)` changes only
