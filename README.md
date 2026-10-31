@@ -6,9 +6,32 @@ It is built to make reactive models more proactive without collapsing motivation
 
 `SALIENCE != DRIVE != WANT != CHOICE != GOAL != CONSENT != AUTHORITY != ACTION != PHENOMENOLOGY`
 
-## Foundation V2.8
+## Use Volition as a library
 
-The current work branch implements:
+Volition provides **Python 3.11+ reference primitives** that can be embedded in an agent runtime or evaluated in isolation. The source package is named `volition` (`pyproject.toml`); it does not register a command-line application or run a background service. A host supplies observations, chooses whether to call the engine, persists snapshots, and independently governs any external action.
+
+**Reuse rights:** This source snapshot has no root license file or package license declaration. Its public availability is not itself a license grant. Verify permitted use and redistribution rights with the copyright holder before incorporating it into another product.
+
+| Surface | What the current code provides | What it does not establish |
+| --- | --- | --- |
+| `VolitionEngine` | Typed signals, want/choice/goal transitions, bounded cognition requests, snapshot/restore | Autonomous effects, consent, current observation authenticity |
+| `MotiveTemporalModel` | Configured ARIMA, Hawkes, optional diffusion and refractory recurrence calculations | Trained prediction quality or a fitted model supplied by this package |
+| `OperationalMotivation` | Caller-admitted, replay-bounded operational-want state | Independent attestation of the caller's allowlist or sensor evidence |
+| Bridges and diagnostics | Temporal, historical-conation, MESO intent adapters; diagnostic statistics | Automatic delegation of model identity, source permission or truth |
+
+From a source checkout:
+
+```bash
+python -m pip install -e .
+python -m pip install "pytest>=8,<10"  # test runner; not a runtime dependency
+python -m pytest -q
+```
+
+The [minimal example](#minimal-example) below only computes an internal cognition request. Its output is not a command to a tool, an assertion of lived desire, or an execution entitlement. For exported interfaces, inspect [`src/volition/__init__.py`](src/volition/__init__.py).
+
+## Implemented capabilities (package 0.11.0; Foundation V2.8)
+
+The current `main` source implements:
 - eight typed motive families: homeostatic, epistemic, competence, empowerment, open-loop, social, self-model, and protection;
 - provenance/currentness gating for historical evidence;
 - bounded family arbitration so repeated evidence cannot self-amplify;
