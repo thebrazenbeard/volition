@@ -53,7 +53,7 @@ The current `main` source implements:
 - martingale residual and time-rescaling point-process diagnostics;
 - distributional screening of time-rescaled intervals via Uniform-transform KS distance and lag-1 correlation;
 - conservative subcriticality checks against runaway excitation;
-- hard `effect_authority=False` boundaries throughout.
+- engine-issued motivation records retain `effect_authority=False`. Caller-constructed dataclasses can supply that field and are **not authenticated permission objects**; an integrating host must separately enforce identity, consent, provider binding, and protected-action authorization.
 
 ## Temporal model
 
