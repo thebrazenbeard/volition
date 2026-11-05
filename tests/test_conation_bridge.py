@@ -74,7 +74,10 @@ def test_reappraisal_requires_same_target_and_drive_family():
         ConationBridge.reappraise(record(kind=DriveKind.OPEN_LOOP), current_signal(kind=DriveKind.SELF_MODEL))
 
 
-@pytest.mark.parametrize('status', ['COMPLETED', 'REVOKED', 'CONTRADICTED', 'REVISED'])
+@pytest.mark.parametrize('status', [
+    'COMPLETED', 'REVOKED', 'CONTRADICTED', 'REVISED',
+    'COMPLETE', 'REVOKE', 'CONTRADICT', 'REVISE',
+])
 def test_terminal_or_superseded_record_cannot_be_reanimated(status):
     with pytest.raises(ValueError):
         ConationBridge.reappraise(record(status), current_signal())

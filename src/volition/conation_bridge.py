@@ -16,6 +16,11 @@ _NON_REANIMATABLE = frozenset({
     'REVOKED',
     'CONTRADICTED',
     'REVISED',
+    # Conations emits lifecycle event verbs; old exports may contain either form.
+    'COMPLETE',
+    'REVOKE',
+    'CONTRADICT',
+    'REVISE',
 })
 
 
