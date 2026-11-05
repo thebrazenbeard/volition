@@ -89,6 +89,7 @@ class HistoricalReappraisalBoundaryTests(unittest.TestCase):
         for placeholder in (
             "unspecified ", " unspecified ", "\tUnSpEcIfIeD\n", " ", "",
             "\u200b", "\ufeff", "\u2060", "\x00", "\u034f", "\ufe0f",
+            "\u093e", "\u0903",
             "Unspecified\u200b", "UNSPECIFIED\ufeff", "Unsp\u034fecified",
             "current:\x00synthetic", "\u200bcurrent:synthetic",
         ):
@@ -104,6 +105,7 @@ class HistoricalReappraisalBoundaryTests(unittest.TestCase):
         for named_source in (
             "café:révision", "観測:現在", "запись:источник", "e\u0301tude:record",
             "source:مراجعة", "source:χρόνος", "source:observed\u00a0now",
+            "स्रोत:मात्रा", "अवलोकन:हिन्दी",
         ):
             with self.subTest(source=named_source):
                 historical, current = ConationBridge.reappraise(
@@ -113,7 +115,10 @@ class HistoricalReappraisalBoundaryTests(unittest.TestCase):
                 self.assertEqual(current.source, named_source)
 
     def test_raw_engine_rejects_invisible_or_control_source_syntax(self):
-        for invisible in ("\u200b", "\ufeff", "\u2060", "\x00", "\u034f", "\ufe0f", "named\u200b"):
+        for invisible in (
+            "\u200b", "\ufeff", "\u2060", "\x00", "\u034f", "\ufe0f",
+            "\u093e", "\u0903", "named\u200b",
+        ):
             with self.subTest(source=repr(invisible)), self.assertRaises(ValueError):
                 VolitionEngine().evaluate([
                     self.forged,
@@ -121,7 +126,10 @@ class HistoricalReappraisalBoundaryTests(unittest.TestCase):
                 ])
 
     def test_raw_engine_keeps_default_and_multilingual_source_compatibility(self):
-        for source_id in ("unspecified", "source:café", "source:漢字", "source:e\u0301tude"):
+        for source_id in (
+            "unspecified", "source:café", "source:漢字", "source:e\u0301tude",
+            "स्रोत:मात्रा", "अवलोकन:हिन्दी",
+        ):
             with self.subTest(source=source_id):
                 want = VolitionEngine().evaluate([
                     replace(self.current(), source=source_id),

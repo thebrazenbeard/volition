@@ -6,7 +6,7 @@ import unicodedata
 
 
 _FORBIDDEN_CATEGORIES = frozenset({'Cc', 'Cf', 'Cs', 'Zl', 'Zp'})
-_IGNORABLE_MARK_CATEGORIES = frozenset({'Mn', 'Me'})
+_IGNORABLE_MARK_CATEGORIES = frozenset({'Mn', 'Me', 'Mc'})
 
 
 def admissible_source(value: object, *, require_explicit: bool = False) -> bool:
@@ -14,8 +14,9 @@ def admissible_source(value: object, *, require_explicit: bool = False) -> bool:
 
     Controls, format characters and surrogates are not stable evidence labels;
     Unicode letters, scripts, spacing and combining accents otherwise survive.
-    Nonspacing marks cannot *alone* supply a visible identifier or conceal the
-    reserved ``unspecified`` placeholder in an explicit-source admission.
+    Combining marks (including spacing marks in Indic scripts) cannot *alone*
+    supply a visible identifier or conceal the reserved ``unspecified``
+    placeholder in an explicit-source admission.
 
     This says nothing about whether a named source is authenticated or current.
     """
