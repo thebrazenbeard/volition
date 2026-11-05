@@ -60,8 +60,12 @@ def test_historical_reappraisal_requires_matching_current_evidence(mismatch):
         current = replace(current, provenance=ProvenanceClass.MODEL_GENERATED)
 
     want = next(w for w in VolitionEngine().evaluate([historical, current]) if w.target == "x")
-    assert want.score == 0.0
+    assert want.score == pytest.approx(0.2 if mismatch == "provenance" else 0.0)
     assert not want.eligible
+    assert next(
+        c.value for c in want.contributions
+        if c.provenance is ProvenanceClass.HISTORICAL_EVIDENCE
+    ) == 0.0
 
 
 def test_matching_current_evidence_caps_historical_strength():
