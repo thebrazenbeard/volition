@@ -97,7 +97,11 @@ class ConationBridge:
             raise ValueError('current evidence target does not match conation record')
         if current.kind is not record.kind:
             raise ValueError('current evidence drive family does not match conation record')
-        if not current.source or current.source == 'unspecified':
+        if (
+            not isinstance(current.source, str)
+            or not current.source.strip()
+            or current.source.strip().casefold() == 'unspecified'
+        ):
             raise ValueError('current evidence requires an explicit source')
 
         historical = Signal(

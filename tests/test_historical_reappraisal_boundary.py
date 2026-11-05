@@ -76,6 +76,20 @@ class HistoricalReappraisalBoundaryTests(unittest.TestCase):
             with self.subTest(status=status), self.assertRaises(ValueError):
                 ConationBridge.reappraise(record, self.current())
 
+    def test_placeholder_current_sources_cannot_reappraise_history(self):
+        record = ConationRecord(
+            record_id="fictional-002",
+            target=self.forged.target,
+            kind=self.forged.kind,
+            magnitude=1.0,
+            confidence=1.0,
+            status="PRESENT",
+            source_locator="fictional:historical-export",
+        )
+        for placeholder in ("unspecified ", " unspecified ", "\tUnSpEcIfIeD\n", " ", ""):
+            with self.subTest(source=repr(placeholder)), self.assertRaises(ValueError):
+                ConationBridge.reappraise(record, replace(self.current(), source=placeholder))
+
 
 if __name__ == "__main__":
     unittest.main()
