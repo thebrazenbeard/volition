@@ -86,9 +86,47 @@ class HistoricalReappraisalBoundaryTests(unittest.TestCase):
             status="PRESENT",
             source_locator="fictional:historical-export",
         )
-        for placeholder in ("unspecified ", " unspecified ", "\tUnSpEcIfIeD\n", " ", ""):
+        for placeholder in (
+            "unspecified ", " unspecified ", "\tUnSpEcIfIeD\n", " ", "",
+            "\u200b", "\ufeff", "\u2060", "\x00", "\u034f", "\ufe0f",
+            "Unspecified\u200b", "UNSPECIFIED\ufeff", "Unsp\u034fecified",
+            "current:\x00synthetic", "\u200bcurrent:synthetic",
+        ):
             with self.subTest(source=repr(placeholder)), self.assertRaises(ValueError):
                 ConationBridge.reappraise(record, replace(self.current(), source=placeholder))
+
+    def test_explicit_unicode_current_identifiers_remain_admissible(self):
+        record = ConationRecord(
+            record_id="fictional-003", target=self.forged.target,
+            kind=self.forged.kind, magnitude=0.8, confidence=0.8,
+            status="PRESENT", source_locator="fictional:historical-export",
+        )
+        for named_source in (
+            "café:révision", "観測:現在", "запись:источник", "e\u0301tude:record",
+            "source:مراجعة", "source:χρόνος", "source:observed\u00a0now",
+        ):
+            with self.subTest(source=named_source):
+                historical, current = ConationBridge.reappraise(
+                    record, replace(self.current(), source=named_source)
+                )
+                self.assertTrue(historical.current_reappraisal)
+                self.assertEqual(current.source, named_source)
+
+    def test_raw_engine_rejects_invisible_or_control_source_syntax(self):
+        for invisible in ("\u200b", "\ufeff", "\u2060", "\x00", "\u034f", "\ufe0f", "named\u200b"):
+            with self.subTest(source=repr(invisible)), self.assertRaises(ValueError):
+                VolitionEngine().evaluate([
+                    self.forged,
+                    replace(self.current(), source=invisible),
+                ])
+
+    def test_raw_engine_keeps_default_and_multilingual_source_compatibility(self):
+        for source_id in ("unspecified", "source:café", "source:漢字", "source:e\u0301tude"):
+            with self.subTest(source=source_id):
+                want = VolitionEngine().evaluate([
+                    replace(self.current(), source=source_id),
+                ])[0]
+                self.assertEqual(want.target, self.forged.target)
 
 
 if __name__ == "__main__":

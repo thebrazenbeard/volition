@@ -34,6 +34,13 @@ These checks validate source declarations, **not the authenticity of a current
 statement**. A host adapter must separately establish and authorize current
 provenance before passing its signals into Volition.
 
+All raw Volition signals must carry printable, non-control source labels;
+invisible-only, format/control-containing, and combining-mark-only labels fail
+closed. The bridge additionally refuses blank or visually disguised
+`unspecified` placeholders as **current evidence sources**. Ordinary Unicode
+letters, scripts, and combining accents remain valid identifiers. Source
+syntax does not authenticate a claimed `CURRENT_STATEMENT` or `CURRENT_OBSERVATION`.
+
 ## Lifecycle boundaries
 
 Records marked `COMPLETED`, `REVOKED`, `CONTRADICTED`, or `REVISED`, or carrying

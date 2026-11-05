@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import math
 
 from .models import DriveKind, ProvenanceClass, Signal
+from .source_validation import admissible_source
 
 
 _CURRENT_PROVENANCE = frozenset({
@@ -97,11 +98,7 @@ class ConationBridge:
             raise ValueError('current evidence target does not match conation record')
         if current.kind is not record.kind:
             raise ValueError('current evidence drive family does not match conation record')
-        if (
-            not isinstance(current.source, str)
-            or not current.source.strip()
-            or current.source.strip().casefold() == 'unspecified'
-        ):
+        if not admissible_source(current.source, require_explicit=True):
             raise ValueError('current evidence requires an explicit source')
 
         historical = Signal(

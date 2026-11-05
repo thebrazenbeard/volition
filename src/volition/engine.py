@@ -5,6 +5,7 @@ from copy import deepcopy
 from dataclasses import asdict, dataclass
 
 from .goal_completion import AdmittedGoalCompletion
+from .source_validation import admissible_source
 from .models import (
     ChoiceClass,
     ChoiceRecord,
@@ -216,6 +217,8 @@ def _validated_signal(signal: Signal) -> None:
         value = getattr(signal, field_name)
         if not isinstance(value, str) or not value.strip():
             raise ValueError(f"signal {field_name} must be non-empty text")
+    if not admissible_source(signal.source):
+        raise ValueError("signal source must be a printable identifier")
     if not isinstance(signal.kind, DriveKind):
         raise ValueError("signal kind must be a DriveKind enum")
     if not isinstance(signal.provenance, ProvenanceClass):
