@@ -104,6 +104,19 @@ def test_reappraised_history_never_creates_choice_or_goal_automatically():
     assert engine.active_goal is None
 
 
+@pytest.mark.parametrize('field', ['magnitude', 'confidence'])
+@pytest.mark.parametrize('value', [True, False, '0.5', b'0.5', None])
+def test_conation_record_rejects_coercible_numeric_evidence(field, value):
+    kwargs = dict(
+        record_id='conation-001', target='x', kind=DriveKind.OPEN_LOOP,
+        magnitude=0.9, confidence=0.8, status='PRESENT',
+        source_locator='conations:synthetic',
+    )
+    kwargs[field] = value
+    with pytest.raises(ValueError):
+        ConationRecord(**kwargs)
+
+
 @pytest.mark.parametrize(
     'kwargs',
     [

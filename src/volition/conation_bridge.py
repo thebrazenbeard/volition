@@ -26,9 +26,12 @@ _NON_REANIMATABLE = frozenset({
 
 
 def _unit(value: float, *, name: str) -> float:
+    # A coercible bool or string is not a measured conation strength.
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f'{name} must be numeric')
     try:
         resolved = float(value)
-    except (TypeError, ValueError) as exc:
+    except (TypeError, ValueError, OverflowError) as exc:
         raise ValueError(f'{name} must be numeric') from exc
     if not math.isfinite(resolved) or not 0.0 <= resolved <= 1.0:
         raise ValueError(f'{name} must be finite and in [0, 1]')
