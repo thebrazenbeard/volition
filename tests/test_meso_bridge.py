@@ -115,6 +115,27 @@ def test_invalid_meso_intent_contract_fails_closed(bad):
         MesoIntentEvidence.from_value(bad)
 
 
+@pytest.mark.parametrize('bad_strength', [True, False, '0.5', '1', b'0.5', None])
+def test_meso_strength_rejects_coercible_non_numeric_values(bad_strength):
+    raw = intent(kind='inspect', strength=bad_strength)
+    with pytest.raises(ValueError, match='numeric'):
+        MesoIntentEvidence.from_value(raw)
+    with pytest.raises(ValueError, match='numeric'):
+        MesoIntentBridge.to_signals(raw)
+
+    raw.pop('can_execute')
+    typed = MesoIntentEvidence(**raw)
+    with pytest.raises(ValueError, match='numeric'):
+        MesoIntentBridge.to_signals(typed)
+
+
+@pytest.mark.parametrize('valid_strength', [0, 1, 0.375])
+def test_meso_strength_accepts_finite_numeric_values(valid_strength):
+    value = MesoIntentEvidence.from_value(intent(kind='inspect', strength=valid_strength))
+    assert value.strength == pytest.approx(float(valid_strength))
+    assert MesoIntentBridge.to_signals(intent(kind='inspect', strength=valid_strength))[0].magnitude == pytest.approx(float(valid_strength))
+
+
 @pytest.mark.parametrize(
     'overrides',
     [

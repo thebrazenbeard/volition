@@ -47,9 +47,11 @@ class MesoIntentEvidence:
             raise ValueError(f"unsupported MESO intent kind: {kind}")
 
         raw_strength = _field(value, "strength")
+        if isinstance(raw_strength, bool) or not isinstance(raw_strength, (int, float)):
+            raise ValueError("MESO intent strength must be numeric")
         try:
             strength = float(raw_strength)
-        except (TypeError, ValueError) as exc:
+        except (TypeError, ValueError, OverflowError) as exc:
             raise ValueError("MESO intent strength must be numeric") from exc
         if not math.isfinite(strength) or not 0.0 <= strength <= 1.0:
             raise ValueError("MESO intent strength must be finite and in [0, 1]")
