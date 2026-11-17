@@ -214,3 +214,33 @@ def test_historical_conation_terminal_status_cannot_be_revived_case_insensitivel
             target=record.target, kind=record.kind, magnitude=0.8,
             provenance=ProvenanceClass.CURRENT_OBSERVATION, source="observer:claim",
         ))
+
+
+@pytest.mark.parametrize("corruption", ["missing", "ineligible", "score", "retargeted"])
+def test_restored_active_goal_requires_matching_eligible_persistent_want(corruption):
+    loop = OperationalMotivation()
+    claim = observation()
+    assert loop.propose(proposal(claim), admitted(claim)) is not None
+    snapshot = deepcopy(loop.snapshot())
+
+    if corruption == "missing":
+        snapshot["wants"].clear()
+    elif corruption == "ineligible":
+        snapshot["wants"][0]["eligible"] = False
+    elif corruption == "score":
+        snapshot["wants"][0]["score"] = 0.01
+    else:
+        snapshot["wants"][0]["target"] = "unrelated-goal"
+
+    with pytest.raises(ValueError, match="active goal.*eligible persistent want|active goal.*score"):
+        OperationalMotivation.from_snapshot(snapshot)
+
+
+def test_restored_active_goal_with_valid_want_remains_eligible():
+    loop = OperationalMotivation()
+    claim = observation()
+    original = loop.propose(proposal(claim), admitted(claim))
+
+    restored = OperationalMotivation.from_snapshot(deepcopy(loop.snapshot()))
+    assert restored.engine.active_goal == original
+    assert restored.request_cognition() is not None
