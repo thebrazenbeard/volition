@@ -19,9 +19,71 @@ def test_historical_evidence_requires_current_reappraisal():
     want = engine.evaluate([historical])[0]
     assert want.score == 0.0
     assert not want.eligible
-    fresh = engine.evaluate([replace(historical, current_reappraisal=True)])[0]
-    assert fresh.score > 0.0
-    assert fresh.eligible
+    flag_alone = engine.evaluate([replace(historical, current_reappraisal=True)])[0]
+    assert flag_alone.score == 0.0
+    assert not flag_alone.eligible
+
+
+def test_forged_historical_reappraisal_does_not_mint_choice_or_goal():
+    engine = VolitionEngine()
+    forged = signal(
+        DriveKind.OPEN_LOOP,
+        provenance=ProvenanceClass.HISTORICAL_EVIDENCE,
+        current_reappraisal=True,
+    )
+    want = engine.evaluate([forged])[0]
+    assert want.score == 0.0
+    assert not want.eligible
+    with pytest.raises(ValueError):
+        engine.choose(want)
+    assert engine.choices == ()
+    assert engine.active_goal is None
+
+
+@pytest.mark.parametrize("mismatch", ["target", "kind", "provenance"])
+def test_historical_reappraisal_requires_matching_current_evidence(mismatch):
+    historical = signal(
+        DriveKind.OPEN_LOOP,
+        provenance=ProvenanceClass.HISTORICAL_EVIDENCE,
+        current_reappraisal=True,
+    )
+    current = signal(
+        DriveKind.OPEN_LOOP,
+        provenance=ProvenanceClass.CURRENT_STATEMENT,
+        magnitude=0.2,
+    )
+    if mismatch == "target":
+        current = replace(current, target="different")
+    elif mismatch == "kind":
+        current = replace(current, kind=DriveKind.EPISTEMIC)
+    else:
+        current = replace(current, provenance=ProvenanceClass.MODEL_GENERATED)
+
+    want = next(w for w in VolitionEngine().evaluate([historical, current]) if w.target == "x")
+    assert want.score == pytest.approx(0.2 if mismatch == "provenance" else 0.0)
+    assert not want.eligible
+    assert next(
+        c.value for c in want.contributions
+        if c.provenance is ProvenanceClass.HISTORICAL_EVIDENCE
+    ) == 0.0
+
+
+def test_matching_current_evidence_caps_historical_strength():
+    historical = signal(
+        DriveKind.OPEN_LOOP,
+        magnitude=1.0,
+        provenance=ProvenanceClass.HISTORICAL_EVIDENCE,
+        current_reappraisal=True,
+    )
+    current = signal(
+        DriveKind.OPEN_LOOP,
+        magnitude=0.2,
+        provenance=ProvenanceClass.CURRENT_OBSERVATION,
+    )
+    want = VolitionEngine().evaluate([historical, current])[0]
+    assert want.score == pytest.approx(0.2)
+    assert not want.eligible
+    assert want.effect_authority is False
 
 
 def test_protection_veto_beats_approach_pressure():

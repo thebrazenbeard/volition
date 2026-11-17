@@ -5,6 +5,7 @@ from copy import deepcopy
 from dataclasses import asdict, dataclass
 
 from .goal_completion import AdmittedGoalCompletion
+from .source_validation import admissible_source
 from .models import (
     ChoiceClass,
     ChoiceRecord,
@@ -216,6 +217,8 @@ def _validated_signal(signal: Signal) -> None:
         value = getattr(signal, field_name)
         if not isinstance(value, str) or not value.strip():
             raise ValueError(f"signal {field_name} must be non-empty text")
+    if not admissible_source(signal.source):
+        raise ValueError("signal source must be a printable identifier")
     if not isinstance(signal.kind, DriveKind):
         raise ValueError("signal kind must be a DriveKind enum")
     if not isinstance(signal.provenance, ProvenanceClass):
@@ -301,31 +304,36 @@ class VolitionEngine:
             )
         )
 
-    def _signal_value(self, signal: Signal) -> float:
-        if (
-            signal.provenance is ProvenanceClass.HISTORICAL_EVIDENCE
-            and not signal.current_reappraisal
-        ):
-            return 0.0
+    def _signal_value(self, signal: Signal, *, current_cap: float = 0.0) -> float:
+        # The reappraisal flag is caller-supplied metadata, not fresh evidence.
+        # Without a paired current signal, historical motive weight is zero.
+        if signal.provenance is ProvenanceClass.HISTORICAL_EVIDENCE:
+            if not signal.current_reappraisal:
+                return 0.0
+            current_cap = _unit(current_cap)
 
         magnitude = _unit(signal.magnitude)
         confidence = _unit(signal.confidence)
         if signal.kind is DriveKind.EPISTEMIC:
-            return (
+            value = (
                 magnitude
                 * confidence
                 * _unit(signal.expected_information_gain)
                 * _unit(signal.controllability)
             )
-        if signal.kind is DriveKind.COMPETENCE:
-            return magnitude * confidence * _unit(signal.learning_progress)
-        if signal.kind is DriveKind.HOMEOSTATIC:
-            return magnitude * confidence * _unit(signal.predicted_deficit_reduction)
-        if signal.kind is DriveKind.SOCIAL:
-            return min(magnitude * confidence, self.policy.social_cap)
-        if signal.kind is DriveKind.EMPOWERMENT:
-            return min(magnitude * confidence, self.policy.empowerment_cap)
-        return magnitude * confidence
+        elif signal.kind is DriveKind.COMPETENCE:
+            value = magnitude * confidence * _unit(signal.learning_progress)
+        elif signal.kind is DriveKind.HOMEOSTATIC:
+            value = magnitude * confidence * _unit(signal.predicted_deficit_reduction)
+        elif signal.kind is DriveKind.SOCIAL:
+            value = min(magnitude * confidence, self.policy.social_cap)
+        elif signal.kind is DriveKind.EMPOWERMENT:
+            value = min(magnitude * confidence, self.policy.empowerment_cap)
+        else:
+            value = magnitude * confidence
+        if signal.provenance is ProvenanceClass.HISTORICAL_EVIDENCE:
+            return min(value, current_cap)
+        return value
 
     def evaluate(self, signals: list[Signal]) -> list[Want]:
         self._issued_wants = []
@@ -341,8 +349,25 @@ class VolitionEngine:
             family_values: dict[DriveKind, float] = {}
             reasons: list[str] = []
 
+            # A historical reappraisal must be accompanied in this very
+            # evaluation by a current signal of the same target and family.
+            # Its strength cannot exceed that current signal's own strength.
+            current_family_values: dict[DriveKind, float] = {}
             for signal in target_signals:
-                value = self._signal_value(signal)
+                if signal.provenance in (
+                    ProvenanceClass.CURRENT_OBSERVATION,
+                    ProvenanceClass.CURRENT_STATEMENT,
+                ):
+                    current_family_values[signal.kind] = max(
+                        current_family_values.get(signal.kind, 0.0),
+                        self._signal_value(signal),
+                    )
+
+            for signal in target_signals:
+                value = self._signal_value(
+                    signal,
+                    current_cap=current_family_values.get(signal.kind, 0.0),
+                )
                 contributions.append(
                     DriveContribution(
                         kind=signal.kind,
@@ -360,6 +385,11 @@ class VolitionEngine:
                     and not signal.current_reappraisal
                 ):
                     reasons.append("historical_requires_current_reappraisal")
+                elif (
+                    signal.provenance is ProvenanceClass.HISTORICAL_EVIDENCE
+                    and signal.kind not in current_family_values
+                ):
+                    reasons.append("historical_requires_current_evidence")
 
             protection = family_values.get(DriveKind.PROTECTION, 0.0)
             positive = sum(

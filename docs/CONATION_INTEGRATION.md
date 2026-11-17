@@ -24,9 +24,28 @@ The historical contribution remains labeled historical and is capped by the fres
 
 Per-drive-family max arbitration prevents the archived record from amplifying a weaker present signal.
 
+The engine independently enforces this at **evaluation**, including for raw
+caller-constructed `Signal` objects: `current_reappraisal=True` alone does not
+qualify historical evidence. A current-provenance signal with the same target
+and drive family must be supplied in the same call, and any historical
+contribution is capped by that current signal's evaluated strength. Thus a
+forged history flag cannot manufacture an eligible Want, Choice, or Goal.
+These checks validate source declarations, **not the authenticity of a current
+statement**. A host adapter must separately establish and authorize current
+provenance before passing its signals into Volition.
+
+All raw Volition signals must carry printable, non-control source labels;
+invisible-only, format/control-containing, and combining-mark-only labels fail
+closed. The bridge additionally refuses blank or visually disguised
+`unspecified` placeholders as **current evidence sources**. Ordinary Unicode
+letters, scripts, and combining accents remain valid identifiers. Source
+syntax does not authenticate a claimed `CURRENT_STATEMENT` or `CURRENT_OBSERVATION`.
+
 ## Lifecycle boundaries
 
-Records marked `COMPLETED`, `REVOKED`, `CONTRADICTED`, or `REVISED` cannot be directly reactivated through this bridge. A later state is new evidence.
+Records marked `COMPLETED`, `REVOKED`, `CONTRADICTED`, or `REVISED`, or carrying
+Conations' lifecycle event verbs `COMPLETE`, `REVOKE`, `CONTRADICT`, or `REVISE`,
+cannot be directly reactivated through this bridge. A later state is new evidence.
 
 `HISTORICAL / UNRESOLVED` and `CONSTRAINT-AFFECTED / UNEXPRESSED-UNCERTAIN` remain historical without being rewritten to zero. They still contribute zero current motive value until separately corroborated.
 
