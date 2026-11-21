@@ -471,3 +471,112 @@ def test_scoped_family_identifier_rejects_noncanonical_separators():
             scoped.observe(alias, "a"*64, case(.9,.7,.24),
                            "ANSWER", True, "receipt-canonical")
     assert scoped.snapshot() == before
+
+
+def test_letter_family_generator_freezes_unique_separate_holdout():
+    from scripts.local_letter_feedback_trial import make_tasks, protocol_digest
+    training = make_tasks(31031, 12)
+    heldout = make_tasks(88500, 10, excluded={t.question for t in training})
+    assert len(training) == len({t.question for t in training}) == 36
+    assert len(heldout) == len({t.question for t in heldout}) == 30
+    assert {t.question for t in training}.isdisjoint({t.question for t in heldout})
+    assert make_tasks(31031, 12) == training
+    assert make_tasks(88500, 10, excluded={t.question for t in training}) == heldout
+    assert {t.group for t in training} == {"easy", "medium", "hard"}
+    assert all(type(t.correct) is int and t.correct == t.word.count(t.target) for t in training + heldout)
+    assert len(protocol_digest()) == 64
+
+
+def test_letter_family_choice_executes_verification_or_preserves_model_response():
+    from scripts.local_letter_feedback_trial import LetterTask, execute_letter_choice
+    word = "aaaacccaabcde"
+    task = LetterTask("medium", "a", word)
+    assert task.correct == 6
+    seen = []
+    def verifier(x):
+        seen.append(x.question)
+        return sum(1 for c in x.word if c == x.target)
+    verified = execute_letter_choice(task, 3, "VERIFY", verifier=verifier)
+    assert seen == [task.question]
+    assert verified["verification_executed"] is True
+    assert verified["final_answer"] == 6
+    assert verified["final_correct"] is True
+    with pytest.raises(RuntimeError, match="verifier down"):
+        execute_letter_choice(task, 3, "VERIFY",
+                              verifier=lambda x: (_ for _ in ()).throw(RuntimeError("verifier down")))
+    wrong = execute_letter_choice(task, 3, "VERIFY", verifier=lambda x: 2)
+    assert wrong["final_answer"] == 2 and wrong["final_correct"] is False
+    with pytest.raises(TypeError):
+        execute_letter_choice(task, 3, "VERIFY", verifier=lambda x: True)
+    answered = execute_letter_choice(task, 3, "ANSWER", verifier=lambda x: 777)
+    assert answered["verification_executed"] is False
+    assert answered["final_answer"] == 3
+    with pytest.raises(ValueError):
+        execute_letter_choice(task, 3, "EXFILTRATE", verifier=verifier)
+
+
+def test_letter_family_script_rejects_unapproved_receipt_path():
+    from scripts.local_letter_feedback_trial import validate_receipt_path
+    from pathlib import Path
+    for path in (Path("D:/VERA/published/private.json"), Path("/mnt/data/private.json"),
+                 Path("D:/VERA/_agent-work/bt2-vera-adaptive-choice-20261121-private-receipts/../outside.json")):
+        with pytest.raises((ValueError, TypeError)):
+            validate_receipt_path(path)
+
+
+def test_letter_family_valid_private_receipt_target_is_accepted_without_creation():
+    from pathlib import Path
+    from scripts.local_letter_feedback_trial import validate_receipt_path
+    path = Path(r"D:\VERA\_agent-work\bt2-vera-adaptive-choice-20261121-private-receipts\synthetic-future-uncreated-letter-feedback.json")
+    assert not path.exists()
+    assert validate_receipt_path(path) == path
+    assert not path.exists()
+
+
+def test_letter_family_evaluation_cannot_claim_selectivity_when_everything_verified():
+    from scripts.local_letter_feedback_trial import evaluate_fixed_policy_controls
+    result = evaluate_fixed_policy_controls(
+        n=30, baseline_correct=1, final_correct=30, verify_calls=30, cost=.24
+    )
+    assert result["utility_vs_always_answer"] == pytest.approx(.76 - (1/30))
+    assert result["utility_vs_assumed_perfect_verify"] == pytest.approx(0.)
+    assert result["excess_utility_vs_best_fixed"] == pytest.approx(0.)
+    assert result["selective_evidence"] is False
+    assert result["status"] == "TRIVIAL_ALWAYS_VERIFY"
+
+
+def test_letter_family_evaluation_uses_best_fixed_policy_as_control():
+    from scripts.local_letter_feedback_trial import evaluate_fixed_policy_controls
+    arithmetic = evaluate_fixed_policy_controls(
+        n=30, baseline_correct=17, final_correct=26, verify_calls=10, cost=.24
+    )
+    assert arithmetic["excess_utility_vs_best_fixed"] == pytest.approx(
+        ((26-10*.24)/30)-(1-.24)
+    )
+    assert arithmetic["selective_evidence"] is True
+    no_checks = evaluate_fixed_policy_controls(
+        n=30, baseline_correct=17, final_correct=17, verify_calls=0, cost=.24
+    )
+    assert no_checks["selective_evidence"] is False
+    assert no_checks["status"] == "TRIVIAL_ALWAYS_ANSWER"
+
+
+def test_letter_family_evaluation_rejects_forged_counts_and_costs():
+    from scripts.local_letter_feedback_trial import evaluate_fixed_policy_controls
+    for args in (
+        dict(n=0,baseline_correct=0,final_correct=0,verify_calls=0,cost=.24),
+        dict(n=30,baseline_correct=31,final_correct=30,verify_calls=0,cost=.24),
+        dict(n=30,baseline_correct=1,final_correct=30,verify_calls=True,cost=.24),
+        dict(n=30,baseline_correct=1,final_correct=30,verify_calls=30,cost=float("nan")),
+        dict(n=30,baseline_correct=1,final_correct=30,verify_calls=30,cost=-.1),
+    ):
+        with pytest.raises((ValueError, TypeError)):
+            evaluate_fixed_policy_controls(**args)
+
+
+def test_letter_family_task_refuses_untrusted_prompt_characters():
+    from scripts.local_letter_feedback_trial import LetterTask
+    for word in ("a"*12+"'", "a"*12+"\n", "a"*12+"#", "a"*12+"9"):
+        with pytest.raises(ValueError, match="malformed"):
+            LetterTask("medium", "a", word)
+    assert LetterTask("easy", "a", "abacaa").correct == 4

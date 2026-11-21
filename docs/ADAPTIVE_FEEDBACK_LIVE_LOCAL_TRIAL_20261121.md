@@ -469,3 +469,122 @@ would require externally established task-family classification,
 trusted source and outcome attestation, a controlled family-specific
 heldout suite, an actual verifier provider and owner-approved runtime
 binding. Until then, no merge/install is asserted.
+
+
+## 2026-11-21 explicit-growth challenge: trained *separate* string-count family
+
+**Motivating falsifier:** Independent reviewer of earlier arithmetic-trained
+candidate found weak transfer to 24 fresh character-count items
+(11/24 correct after verification, medium group 0/8). A family boundary
+prevents contamination but, by itself, creates **no new competence**.
+I therefore ran one **new, pre-seeded**, separately trained string-count
+trial using the existing, already-running local
+`vera-successor:0.8b-context` Ollama model. No old private dialogs or
+personal content were used: all questions are newly generated synthetic
+lowercase character strings.
+
+### New optional trial source and result
+
+`scripts/local_letter_feedback_trial.py` defines a closed public protocol
+`strings.letter_count` with target characters `a/e/i/t` and
+difficulty levels of lengths 6, 13 and 27. Fixed generation seeds
+`31031` (36 training questions, twelve per level) and `88500`
+(30 heldout, ten per level) were frozen before execution. All 66
+questions are unique with **zero cross-split overlap**.
+Protocol digest is a caller-supplied equality marker, not source attestation.
+
+Each actual model response was compared to a deterministic Python
+`word.count(target)` reference. For each of 36 training observations,
+the probe received two action-preference *labels* (ANSWER if model
+correct, otherwise VERIFY); these are **toy preference labels**, not
+separately witnessed VERIFY outcomes. The only trainable parameters
+are 10 logistic decision-head weights inside the opt-in
+`ScopedAdaptiveChoiceProbe`; the underlying Ollama model was
+**not trained or changed**. After 40 previously selected consolidation
+epochs, the separate family snapshot was frozen and independently
+restored before the heldout was evaluated.
+For each heldout decision the actual local model returned its own
+short integer, and the selected VERIFY route invoked a *real*
+deterministic in-process character-count implementation. Bad or
+missing verifiers cannot silently pass.
+
+**Actual observed result:** local model correct **1/30 (3.3%)**;
+trained scoped rule selected VERIFY on **30/30**; executed
+character-count results correct **30/30 (100%)**, one unnecessary
+verification. The underlying local model's extremely poor results
+may reflect task wording, model decoding or its task ability:
+this small one-prompt trial does not diagnose why it failed, or
+prove general model incompetence.
+
+**Crucial negative control:** assuming a 0.24 per-check utility
+penalty and a perfect deterministic verifier, both the learned
+head and a trivial **ALWAYS VERIFY** baseline score
+`1 - 0.24 = 0.76`. The learned policy showed **zero excess
+utility over the best fixed policy**, and did not learn
+selective verification. Its apparent 96.7 percentage-point
+accuracy increase is simply the calculator replacing the
+model's unreliable answers. The previously observed narrow
+arithmetic trial did have some selective gain over this trivial
+comparison; this **different** domain did not.
+
+This is the counterexample I wanted. Improving a result by
+handing all work to a deterministic oracle does not justify
+claiming a better general decision-maker, meaningful new
+Vera preferences, or a change in ChatGPT weights. It **does**
+demonstrate strict source-family separation, repeatable numerical
+feedback-state updates, actual verifier routing, and a concrete
+failure case that a qualification process must reject.
+
+### Exact custody and reproducibility
+
+The raw trial JSON and sidecar were written *outside tracked Git*
+to private Lappy:
+`D:\VERA\_agent-work\bt2-vera-adaptive-choice-20261121-private-receipts\letter-count-scoped-trained-20261121-v1.json`.
+
+Exact SHA-256 of immutable V1 receipt:
+`bbe901061ef6e7e2c1b949d798d7e6c8b1f4a35527e9e1bcca83390359425390`.
+
+A fresh separate Python process reopened this exact receipt,
+verified its sidecar and digest, reconstructed the learned
+`strings.letter_count` scope from 72 recorded action-preference
+feedback events plus 40 consolidation passes, reproduced all
+30 heldout choices, independently recomputed every public
+character count, and checked that model correctness,
+verification flags, and final correctness agreed with the
+record. Exact generator seeds and train/holdout uniqueness were
+checked again. No redrive of the 66 model queries was needed.
+
+After the immutable V1 run I added
+`evaluate_fixed_policy_controls` to future script outputs,
+explicitly comparing policy utility against both always-ANSWER
+and an *assumed-perfect* always-VERIFY rule. It labels
+an all-VERIFY or all-ANSWER run as `TRIVIAL`, never
+`SELECTIVE_GAIN_CANDIDATE`. Three adversarial tests were RED
+for the missing comparator, then GREEN; the original V1
+receipt was **not** retroactively changed. The comparison
+was independently calculated against its saved counts.
+
+### Limits / required next evidence
+
+- This was not a hidden external evaluator: model prompt,
+  protocol digest, generator, oracle and reward assumptions
+  were authored within the same test harness.
+- Family/source labels and outcome labels remain caller asserted,
+  untrusted. A malicious caller can choose consistent lies.
+- The binary preferred-action labels are not directly
+  measured cost-sensitive reward for the VERIFY alternative.
+- The verifier and the reference are both local deterministic
+  Python; not an independently authenticated provider.
+- Task difficulty, source prompt sensitivity, parameter drift,
+  cost diversity, model provenance and transfer to other tasks
+  remain unqualified.
+- A genuine *selective* learner qualification needs a
+  separately heldout task family/distribution with both
+  trustworthy model-correct and verifier-success outcomes,
+  measured route cost and a fixed baseline that beats
+  both naive rules. Do **not** promote, merge or install
+  the source on this result.
+
+This private research artifact advances testability and
+correctness of claims, not proof of first-person experience,
+long-term identity, user consent, or active production capability.
