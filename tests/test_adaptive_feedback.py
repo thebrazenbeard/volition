@@ -295,3 +295,63 @@ def test_cost_assumption_must_match_single_recorded_training_cost():
         mixed.choose_with_cost_assumption(
             case(.9,.7,.5), verifier_success_claim=1.0, reference_cost=.24
         )
+
+
+def test_cost_assumption_rejects_unseen_feature_pairs_and_never_mutates_state():
+    """Fixed-cost feedback is not support for arbitrary new contexts."""
+    probe = AdaptiveChoiceProbe()
+    probe.observe(case(.2, .7, .24), "ANSWER", True, "support-a")
+    probe.observe(case(.8, .7, .24), "VERIFY", True, "support-b")
+    frozen = probe.snapshot()
+    # Both uncertainties lie inside the observed min/max interval; neither
+    # pair was admitted, so interpolation is still unsupported for this API.
+    for ctx in (case(.3, .7, .24), case(.8, .9, .24),
+                case(.1, .7, .02), case(.2, .8, .7)):
+        with pytest.raises(ValueError, match="unsupported training context"):
+            probe.choose_with_cost_assumption(
+                ctx, verifier_success_claim=1.0, reference_cost=.24
+            )
+    assert probe.choose_with_cost_assumption(
+        case(.2, .7, .02), verifier_success_claim=1.0,
+        reference_cost=.24
+    ) in ("ANSWER", "VERIFY")
+    assert probe.snapshot() == frozen
+
+
+def test_cost_assumption_support_guard_survives_snapshot_restore():
+    probe = AdaptiveChoiceProbe()
+    probe.observe(case(.9, .7, .24), "ANSWER", False, "support-restore")
+    restored = AdaptiveChoiceProbe.from_snapshot(probe.snapshot())
+    with pytest.raises(ValueError, match="unsupported training context"):
+        restored.choose_with_cost_assumption(
+            case(.85, .7, .24), verifier_success_claim=1.0,
+            reference_cost=.24
+        )
+    assert restored.choose_with_cost_assumption(
+        case(.9, .7, .24), verifier_success_claim=1.0,
+        reference_cost=.24
+    ) in ("ANSWER", "VERIFY")
+
+
+def test_cost_assumption_requires_observed_answer_action_at_same_pair():
+    """VERIFY-only labels cannot qualify a fitted ANSWER success score."""
+    probe = AdaptiveChoiceProbe()
+    probe.observe(case(.8, .7, .24), "VERIFY", True, "only-verifier-observed")
+    with pytest.raises(ValueError, match="ANSWER outcome"):
+        probe.choose_with_cost_assumption(
+            case(.8, .7, .6), verifier_success_claim=1.0,
+            reference_cost=.24
+        )
+    # Observing ANSWER for the target pair is required, not merely a global
+    # unrelated ANSWER elsewhere in the history.
+    probe.observe(case(.1, .7, .24), "ANSWER", True, "answer-elsewhere")
+    with pytest.raises(ValueError, match="ANSWER outcome"):
+        probe.choose_with_cost_assumption(
+            case(.8, .7, .1), verifier_success_claim=1.0,
+            reference_cost=.24
+        )
+    probe.observe(case(.8, .7, .24), "ANSWER", False, "answer-at-target")
+    assert probe.choose_with_cost_assumption(
+        case(.8, .7, .1), verifier_success_claim=1.0,
+        reference_cost=.24
+    ) in ("ANSWER", "VERIFY")

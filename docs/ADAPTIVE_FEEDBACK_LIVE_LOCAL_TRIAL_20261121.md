@@ -349,3 +349,52 @@ SHA-256 `edccafbed1a03ea17a087f7ddbbad90a1e82348c9b3672c8af892a0527d364b5`.
 The private experiment had only public arithmetic, no user data. No
 protected runtime activation, canonical memory write, model-weight change,
 production tool connection, merged code, or authorizing review was performed.
+
+
+## 2026-11-21 source audit: reject unsupported feature extrapolation
+
+The optional `choose_with_cost_assumption` method added in the preceding
+research commit initially checked that all historical feedback came from
+one recorded cost. That alone did **not** mean the learned ANSWER score
+was supported at the new request's uncertainty/consequence pair. It
+accepted an arbitrary unseen pair and even a pair for which only VERIFY
+feedback had ever been admitted, while comparing that pair's **unobserved**
+ANSWER score with a claimed verification benefit.
+
+The source now **fails closed** unless its ordered feedback history
+contains at least one `ANSWER` observation at the exact requested
+`(uncertainty, consequence)` pair, with the already required common
+`reference_cost`. Thus a new pair inside the old min/max range is still
+rejected, as is a target supported only by VERIFY observations.
+A subsequent restored snapshot enforces the same condition because the
+guard reads the restored ordered history. The decision and state schema
+are otherwise unchanged.
+
+Three new tests were observed RED before repair and GREEN afterward:
+unseen pairs rejected, same check survives snapshot restore, and
+VERIFY-only or unrelated ANSWER feedback cannot stand in for ANSWER
+evidence at the requested pair. Valid, supported decisions remain
+read-only and leave the learned state unchanged.
+
+A fresh **source replay**, not new Ollama inference or training,
+reopened the previous frozen V4 arithmetic receipt
+`6926bd062a9d0a717b1306b36d609f1a5a9fdead21f6a1d412c38ac43020fdad`
+and confirmed that all 30 saved questions still obtain the same
+previously reported proposals at assumed costs:
+0.02 -> 30 VERIFY; 0.24 -> 20; 0.80 -> 0; 1.00 -> 0.
+Two new unsupported pairs `(.3,.7)` and `(.9,.9)` correctly failed
+closed. Full local source suite **320/320 PASS**; expected
+pytest-asyncio deprecation warning remains.
+
+**Important unsolved limitation:** numerical feature support is not
+task-family binding, provenance authentication, calibration, statistical
+confidence or proof of independent action outcome. Character-counting
+questions can reuse the exact same numeric uncertainty/consequence bins
+as arithmetic and therefore still pass this guard while performing
+badly. This repair prevents one form of evidence extrapolation; it does
+**not** qualify general transfer. The other reviewer already observed
+11/24 correctness on a nonarithmetic family and medium group 0/8,
+so the next release gate still requires an independently specified
+task-family contract, heldout qualification and trusted verifier
+outcomes. No effect authority was added, no runtime deployed, and the
+PR remains a source-only draft.

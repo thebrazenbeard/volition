@@ -140,6 +140,18 @@ class AdaptiveChoiceProbe:
             event["context"][2] != original_cost for event in self._events
         ):
             raise ValueError("single-cost training history and reference required")
+        # The proposed benefit is compared with a fitted ANSWER score.
+        # A nearby feature pair, or a VERIFY-only record at the same
+        # pair, cannot establish that answer-score estimate for this API.
+        if not any(
+            event["action"] == "ANSWER"
+            and event["context"][0] == context.uncertainty
+            and event["context"][1] == context.consequence
+            for event in self._events
+        ):
+            raise ValueError(
+                "unsupported training context: an ANSWER outcome is required"
+            )
         reference = EvidenceContext(
             context.uncertainty, context.consequence, original_cost
         )
