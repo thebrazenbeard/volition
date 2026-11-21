@@ -524,12 +524,16 @@ def test_letter_family_script_rejects_unapproved_receipt_path():
             validate_receipt_path(path)
 
 
-def test_letter_family_valid_private_receipt_target_is_accepted_without_creation():
-    from pathlib import Path
-    from scripts.local_letter_feedback_trial import validate_receipt_path
-    path = Path(r"D:\VERA\_agent-work\bt2-vera-adaptive-choice-20261121-private-receipts\synthetic-future-uncreated-letter-feedback.json")
+def test_letter_family_valid_private_receipt_target_is_accepted_without_creation(tmp_path, monkeypatch):
+    import scripts.local_letter_feedback_trial as trial
+    # A Windows Lappy path is not absolute on Linux GitHub runners.
+    # Test the exact same path-boundary logic on both operating systems.
+    private = tmp_path / "private-receipts"
+    private.mkdir()
+    monkeypatch.setattr(trial, "RECEIPT_DIR", private)
+    path = private / "synthetic-future-uncreated-letter-feedback.json"
     assert not path.exists()
-    assert validate_receipt_path(path) == path
+    assert trial.validate_receipt_path(path) == path
     assert not path.exists()
 
 

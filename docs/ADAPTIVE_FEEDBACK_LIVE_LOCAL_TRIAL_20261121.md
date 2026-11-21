@@ -588,3 +588,23 @@ was independently calculated against its saved counts.
 This private research artifact advances testability and
 correctness of claims, not proof of first-person experience,
 long-term identity, user consent, or active production capability.
+
+
+### Hosted CI portability correction for this source head
+
+The first GitHub run for commit `3acfd1d37af755b085bc7c4cfefca4d4b711ff4a`
+**FAILED** Python 3.11/3.12/3.13 and workspace-startup tests despite
+333/333 passing on Windows Lappy. Exact failed log showed one problem:
+`test_letter_family_valid_private_receipt_target_is_accepted_without_creation`
+mistook the literal Windows drive-qualified receipt fixture for an
+absolute path on Linux. It was a **test portability bug**, not a local
+model inference failure. Hosted CodeQL still passed.
+
+The next source-only correction changes that single test to use
+pytest's cross-platform `tmp_path` plus `monkeypatch` for the
+trial's receipt-directory constant, exercising the same receipt
+containment rule on Windows and Linux. The actual Lappy trial
+continues to use the fixed private Windows receipt directory.
+No raw receipt, learned policy weight, original sample,
+production route or model was changed. Hosted CI must be checked
+against the new exact commit, never inferred from local tests.
