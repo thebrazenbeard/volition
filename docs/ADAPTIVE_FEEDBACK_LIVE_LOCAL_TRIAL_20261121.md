@@ -608,3 +608,115 @@ continues to use the fixed private Windows receipt directory.
 No raw receipt, learned policy weight, original sample,
 production route or model was changed. Hosted CI must be checked
 against the new exact commit, never inferred from local tests.
+
+
+## 2026-11-21 second owner challenge: 90 fresh frozen-policy questions
+
+**Preregistered decision:** Freeze the V4 `AdaptiveChoiceProbe` weights
+without new feedback, tuning, or changes to its `choose()` rule; test it
+on three batches of 30 genuinely new structured arithmetic questions.
+Each batch must show strictly greater illustrative utility than
+**both** always-ANSWER and assumed-perfect always-VERIFY at the
+predeclared cost `0.24`. All three batches, not merely their pooled
+aggregate, must pass. This is a research replication test, **not**
+a production model qualification or actual measured verification cost.
+
+### Split construction and prospective correction
+
+The original "easy" addition generator allowed only 8×8 = 64 ordered
+questions. Excluding the four older studies exhausted its unused
+easy-question space, so the first attempted preregistration aborted
+before saving any preregistered question set or calling the model.
+I corrected the **question generator before observing any new model
+answer** to widen "easy" addition operands from 2..9 to **2..19**.
+The old numerical context uncertainty of 0.15 remains unchanged. This
+is intentionally a **distribution-shift** challenge, and is not
+the same distribution as the original V4. Medium and hard ranges are
+unchanged.
+
+The corrected frozen generator produced 90 unique questions, using
+seeds `61741`, `23147`, `86720`, with no overlap against earlier
+arithmetic v1–v4 training/holdout receipts, or between new batches.
+The exact complete list of all 90 questions, exclusion source names and
+SHA-256s, protocol assumptions, and strict pass criteria were written
+as an immutable private preregistration **before** any new Ollama
+inference.
+
+Preregistration JSON SHA-256:
+`ba35bc301bcbb3c751fe7107cef42443694336abfac74bd5fb71d5c5307ebac3`.
+
+### Actual observed model and policy outcomes
+
+The existing local `vera-successor:0.8b-context` answered all 90
+new questions via its already-running Ollama loopback endpoint. The
+source policy was restored from the immutable **V4** local model
+receipt SHA-256
+`6926bd062a9d0a717b1306b36d609f1a5a9fdead21f6a1d412c38ac43020fdad`.
+Every VERIFY choice executed the local Python integer oracle; no model
+or decision-head weights were changed.
+
+| Seed | Model only correct | Model + selected checks correct | Executed checks | Policy utility | Best fixed utility | Excess |
+|---|---:|---:|---:|---:|---:|---:|
+| 61741 | 19/30 | 25/30 | 10 | 0.7533 | 0.7600 | **−0.0067** |
+| 23147 | 20/30 | 27/30 | 10 | 0.8200 | 0.7600 | +0.0600 |
+| 86720 | 19/30 | 26/30 | 10 | 0.7867 | 0.7600 | +0.0267 |
+| **Pooled** | **58/90** | **78/90** | **30** | **0.7867** | **0.7600** | **+0.0267** |
+
+**Predeclared replication qualification: FAILS** because the first
+batch lost to the fixed control. The pooled score does not override
+the three-batch pass criterion, and two favorable batches are
+insufficient to establish stable transfer. These results were not
+used to change epochs, costs, features or policy weights.
+
+### The stronger falsifier: the fixed oracle dominates this environment
+
+All 90 model inferences together took about **19.6433 seconds**
+on the existing Lappy loopback service. The actual 30 selected
+in-process calculator calls together took **0.0000714 seconds**.
+During separate fresh-process readback, evaluating all 90 simple
+already-parsed arithmetic tasks directly using Python `operator.add`
+and `operator.mul` produced **90/90 correct in 0.0001755 seconds**
+of in-process computation. These are local process measurements;
+a full external tool invocation, parsing natural-language questions,
+trust checks and host service latency were **not measured**.
+
+The assumed 0.24 verification cost is therefore not empirically
+justified for this cheap local deterministic oracle. If the task is
+already a structured pair of integers and an operator, **always
+calculate** dominates calling an LLM first on both accuracy and
+observed local computation time. The original task family is a
+poor proving ground for economically meaningful learned selectivity.
+
+**Strongest defensible inference:** The frozen local policy can route
+some model errors to a tool, but does not pass strict replication
+and does not establish a useful, cost-optimal, general decision-maker.
+The prior string-count experiment likewise proved no advantage
+over always verify. Continuing to tune the arithmetic selector
+against an arbitrary check-cost scale would risk benchmarking
+the benchmark, not developing genuine judgment.
+
+### Custody, verification, and next real frontier
+
+The actual private source script, preregistration, and raw outcome
+receipt are retained **outside Git** in Lappy's authorized
+`D:\VERA\_agent-work\bt2-vera-adaptive-choice-20261121-private-receipts`
+directory. Exact outcome JSON SHA-256:
+`7b065e7d46500fe58461cd0145747168327c2157e63f225c2e06195771dbb6af`.
+
+A fresh independent Python interpreter (same host, separate process)
+checked both receipt and preregistration SHA sidecars, all 90
+preregistered question strings, no overlap against earlier trials,
+all actions reproduced from frozen V4 weights, original model
+and final-answer correctness recomputed from operands, verifier
+execution flags, per-batch utility, and unchanged model-choice
+weights. **All checks passed.** This was not an independently
+custodied external evaluator, and the harness was authored by
+the source owner.
+
+No merge, model training, production runtime installation, identity
+change, permission/canonical memory mutation, or trusted cost provider
+is implied. The next substantive qualification needs an actual
+cost-bearing **nontrivial verifier**, with authenticated outcomes,
+externally held-out tasks, and a fixed rule that beats both
+always-verify and never-verify without tuning on the test set.
+Until then the research PR should remain **OPEN DRAFT**.
