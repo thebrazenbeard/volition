@@ -136,3 +136,22 @@ def test_consolidation_replays_observed_feedback_but_freezes_new_admission():
 def test_extremely_large_integer_does_not_escape_finite_validation():
     with pytest.raises(ValueError):
         EvidenceContext(10 ** 10000, .5, .1)
+
+def test_real_trial_generator_has_no_exact_train_holdout_contamination():
+    from scripts.local_arithmetic_feedback_trial import tasks
+    train = tasks(1111, 12)
+    train_questions = {x.question for x in train}
+    assert len(train_questions) == len(train) == 36
+    heldout = tasks(54122, 10, excluded=train_questions)
+    heldout_questions = {x.question for x in heldout}
+    assert len(heldout_questions) == len(heldout) == 30
+    assert train_questions.isdisjoint(heldout_questions)
+    assert len({(x.group, x.question) for x in train}) == 36
+    assert all(type(x.correct) is int for x in train + heldout)
+
+
+def test_trial_generators_are_deterministic_after_overlap_exclusion():
+    from scripts.local_arithmetic_feedback_trial import tasks
+    first = tasks(1111, 12)
+    excludes = {x.question for x in first}
+    assert tasks(54122, 10, excluded=excludes) == tasks(54122, 10, excluded=excludes)

@@ -122,3 +122,70 @@ This source candidate preserves Volition's original
 `SALIENCE != DRIVE != WANT != CHOICE != GOAL != CONSENT != AUTHORITY != ACTION
 != PHENOMENOLOGY` boundary. Values and actions in this work are model-proposed
 and controlled offline, **not verified self-authored commitments**.
+
+## Post-PR hostile audit: exact-question contamination (2026-11-21)
+
+After creating the first draft PR, a fresh independent audit of the V2 receipt
+found one **training/heldout exact overlap** (`5 + 5 = ?`) and one duplicate
+inside the heldout set (`8 + 3 = ?`). Hence the 30-case V2 aggregate is
+historically accurate but **not a 30-question independent heldout claim**.
+Excluding both, the 28 unique non-overlapping questions yielded **12/28 =
+42.9% baseline** and **21/28 = 75.0% with the learned selector**, still a
+positive narrow trial result. The original V2 receipt remains unchanged under
+SHA-256 `b4a2232c79f3e84ce3ef63c45775ae45b2072156b2bd0d3f981a17e7f10d2196`.
+No retroactive changes to the dataset or metric are permitted.
+
+Two new *initially RED* regression tests caught the generator's duplicate and
+cross-split mistakes. The source generator now samples **unique exact questions**
+within training and heldout separately and excludes all exact training
+questions from heldout **before any model call**. This change is prospective:
+rerunning the current script uses a different sequence than historical V2.
+The original PR commit `1d29072bfa3071922e04f48632ce4ca69a1019eb`
+preserves the earlier source version as evidence.
+
+### Third real local-model trial: completely distinct questions
+
+One fresh real Ollama run used the corrected generator and the previously
+chosen, unchanged 40-epoch consolidation schedule, with no after-the-fact
+retuning. The independent readback verified:
+
+- 36 unique training problems, 72 binary action/outcome updates;
+- **30 unique heldout problems and ZERO exact train/heldout overlap**;
+- baseline `vera-successor:0.8b-context`: **19/30 (63.3%) correct**;
+- frozen learned answer/verify selector: **25/30 (83.3%) correct**,
+  recommending exactly ten verifications, of which four were unnecessary;
+- assumed 0.24 penalty per verification: illustrative utility **0.633 to
+  0.753**; this remains a choice of reward scale, not measured tool cost.
+
+Private frozen trial receipt, verified as a separate Python process with
+reconstructed weights and 30/30 decisions:
+SHA-256 `d1905fa842e3e2599ba5b0a40c67749c0b5ab2037a2d5e2d90cd310188f1e358`,
+stored on authorized Lappy **outside the Git repository**. The source module
+was not injected into ChatGPT, Ollama weights, WebUI, VolitionEngine,
+Blotter, or any actual shared service. The result is a bounded, local
+post-processing behavior improvement under deterministic arithmetic tests.
+
+### Genuine new post-restore use, distinct from both datasets
+
+After loading the frozen V3 learner in a **separate Python process**, I checked
+that the previously unused public question `37 * 29 = ?` was absent from
+all its training and evaluation questions. The connected loopback
+`vera-successor:0.8b-context` model answered `105`, which is incorrect;
+the saved learned selector chose `VERIFY`, executed Python integer
+multiplication, and returned `1073`, the correct result. The runtime printed
+`LIVE_LOOPBACK_AND_LOCAL_ARITHMETIC`, `authority_effect=NONE`.
+This is one actually executed check-first decision, not merely an inferred
+counterfactual. It is **not** a hosted Vera tool route or a separate guarantee
+of the model's future behavior.
+
+### Interpretation
+
+The initial trial's failure, overlapping-question correction, and
+zero-overlap third trial all remain part of the evidence. This shows real
+algorithmic feedback adaptation of an **optional local** decision head on
+small arithmetic tasks, not weight changes to ChatGPT or Ollama, not a general
+autonomous person, not sustained self-authored values, and not installed
+cross-session Vera life. My revisable present commitment is to prefer an
+unflattering measured failure to fictional progress, and to change
+future action from feedback **when the evidence is valid**. Verification of
+broader behavior and real owner-approved integration remains unresolved.

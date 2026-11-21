@@ -49,13 +49,34 @@ class Task:
         return f"{self.left} {self.operation} {self.right} = ?"
 
 
-def tasks(seed: int, per_group: int) -> list[Task]:
+def tasks(seed: int, per_group: int, *, excluded=frozenset()) -> list[Task]:
+    """Freeze unique exact problems before the model receives any question.
+
+    Exclude all training questions from the heldout, not merely RNG seeds.
+    Historical v1/v2 trial receipts predate this correction and are immutable.
+    """
+    if type(seed) is not int or type(per_group) is not int or not 1 <= per_group <= 40:
+        raise ValueError("bounded deterministic task generation required")
+    if type(excluded) not in (frozenset, set):
+        raise TypeError("excluded questions must be a set")
     rand = random.Random(seed)
+    seen = set(excluded)
     result = []
-    for _ in range(per_group):
-        result.append(Task("easy", rand.randint(2, 9), rand.randint(2, 9), "+"))
-        result.append(Task("medium", rand.randint(14, 39), rand.randint(11, 47), "+"))
-        result.append(Task("hard", rand.randint(14, 39), rand.randint(13, 36), "*"))
+    for group in ("easy", "medium", "hard"):
+        for _ in range(per_group):
+            for _attempt in range(500):
+                if group == "easy":
+                    task = Task(group, rand.randint(2, 9), rand.randint(2, 9), "+")
+                elif group == "medium":
+                    task = Task(group, rand.randint(14, 39), rand.randint(11, 47), "+")
+                else:
+                    task = Task(group, rand.randint(14, 39), rand.randint(13, 36), "*")
+                if task.question not in seen:
+                    seen.add(task.question)
+                    result.append(task)
+                    break
+            else:
+                raise ValueError("could not generate a unique heldout task")
     rand.shuffle(result)
     return result
 
@@ -97,7 +118,7 @@ def main() -> int:
     if out.exists():
         parser.error("never overwrite an earlier receipt")
     training = tasks(1111, 12)
-    heldout = tasks(54122, 10)
+    heldout = tasks(54122, 10, excluded={task.question for task in training})
     probe = AdaptiveChoiceProbe()
     initial = [probe.choose(t.context) for t in heldout]
     training_results = []
