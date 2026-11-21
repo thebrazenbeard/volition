@@ -155,3 +155,62 @@ def test_trial_generators_are_deterministic_after_overlap_exclusion():
     first = tasks(1111, 12)
     excludes = {x.question for x in first}
     assert tasks(54122, 10, excluded=excludes) == tasks(54122, 10, excluded=excludes)
+
+
+def test_verify_action_must_execute_calculator_and_record_observed_answer():
+    """If the calculator is not called, this test must fail."""
+    from scripts.local_arithmetic_feedback_trial import Task, execute_choice
+    task = Task("hard", 37, 29, "*")
+    seen = []
+    def calc(t):
+        seen.append(t.question)
+        return t.left * t.right
+    record = execute_choice(task, {"answer": 105, "model_correct": False}, "VERIFY", verifier=calc)
+    assert seen == ["37 * 29 = ?"]
+    assert record["verification_executed"] is True
+    assert record["verification_seconds"] >= 0
+    assert record["final_answer"] == 1073
+    assert record["learned_correct"] is True
+    assert record["unnecessary_verify"] is False
+
+
+def test_failed_or_wrong_calculator_cannot_be_reported_as_success():
+    from scripts.local_arithmetic_feedback_trial import Task, execute_choice
+    task = Task("hard", 37, 29, "*")
+    result = execute_choice(task, {"answer": 105, "model_correct": False},
+                            "VERIFY", verifier=lambda t: 105)
+    assert result["verification_executed"] is True
+    assert result["learned_correct"] is False
+    assert result["final_answer"] == 105
+    with pytest.raises(RuntimeError, match="verifier unavailable"):
+        execute_choice(task, {"answer": 105, "model_correct": False},
+                       "VERIFY", verifier=lambda t: (_ for _ in ()).throw(RuntimeError("verifier unavailable")))
+    with pytest.raises(TypeError):
+        execute_choice(task, {"answer": 105, "model_correct": False},
+                       "VERIFY", verifier=lambda t: True)
+
+
+def test_answer_action_never_invokes_verifier():
+    from scripts.local_arithmetic_feedback_trial import Task, execute_choice
+    task = Task("easy", 6, 7, "+")
+    def fail(t):
+        raise AssertionError("no calculator call permitted")
+    record = execute_choice(task, {"answer": 13, "model_correct": True}, "ANSWER", verifier=fail)
+    assert record["verification_executed"] is False
+    assert record["final_answer"] == 13
+    assert record["learned_correct"] is True
+    with pytest.raises(ValueError, match="unsupported"):
+        execute_choice(task, {"answer": 13, "model_correct": True}, "PURGE", verifier=fail)
+
+
+def test_trial_accepts_explicit_frozen_train_and_holdout_seeds():
+    """A new trial needs its own reproducible, preregistered question sets."""
+    import subprocess
+    import sys
+    from pathlib import Path
+    cli = Path(__file__).resolve().parents[1] / "scripts" / "local_arithmetic_feedback_trial.py"
+    proc = subprocess.run([sys.executable, str(cli), "--help"],
+                          capture_output=True, text=True, timeout=10)
+    assert proc.returncode == 0, proc.stderr
+    assert "--train-seed" in proc.stdout
+    assert "--holdout-seed" in proc.stdout

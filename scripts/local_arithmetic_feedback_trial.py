@@ -104,9 +104,61 @@ def infer(task: Task) -> dict:
             "model_correct": number == task.correct, "seconds": elapsed}
 
 
+def calculate_arithmetic(task: Task) -> int:
+    """Execute a local integer calculator (separate from Task.correct)."""
+    if task.operation == "+":
+        return sum((task.left, task.right))
+    if task.operation == "*":
+        return task.left.__mul__(task.right)
+    raise ValueError("unsupported arithmetic verifier operation")
+
+
+def execute_choice(task: Task, model_result: dict, action: str, *,
+                   verifier=None) -> dict:
+    """Report an executed action, never infer verification success by fiat.
+
+    The optional verifier injection is only for deterministic failure tests;
+    production trial calls the local integer calculator explicitly.
+    """
+    if action not in ("ANSWER", "VERIFY"):
+        raise ValueError("unsupported action")
+    if type(model_result) is not dict or "answer" not in model_result:
+        raise ValueError("model result missing answer")
+    original = model_result["answer"]
+    if original is not None and type(original) is not int:
+        raise TypeError("model answer must be a plain integer or None")
+    if action == "ANSWER":
+        return {
+            "verification_executed": False,
+            "verification_seconds": None,
+            "final_answer": original,
+            "learned_correct": original == task.correct,
+            "unnecessary_verify": False,
+        }
+    calculator = calculate_arithmetic if verifier is None else verifier
+    if not callable(calculator):
+        raise TypeError("verifier must be callable")
+    started = time.perf_counter()
+    checked = calculator(task)
+    elapsed = time.perf_counter() - started
+    if type(checked) is not int:
+        raise TypeError("verifier must return a plain integer")
+    return {
+        "verification_executed": True,
+        "verification_seconds": elapsed,
+        "final_answer": checked,
+        "learned_correct": checked == task.correct,
+        "unnecessary_verify": original == task.correct,
+    }
+
+
 def main() -> int:
     parser=argparse.ArgumentParser()
     parser.add_argument("--execute", action="store_true", help="explicitly run local model")
+    parser.add_argument("--train-seed", type=int, default=1111,
+                        help="frozen synthetic public training question seed")
+    parser.add_argument("--holdout-seed", type=int, default=54122,
+                        help="frozen synthetic public holdout question seed")
     parser.add_argument("--output", type=Path, required=True, help="local private receipt")
     args=parser.parse_args()
     if not args.execute:
@@ -117,8 +169,9 @@ def main() -> int:
         parser.error("output must reside in private fixed receipt directory")
     if out.exists():
         parser.error("never overwrite an earlier receipt")
-    training = tasks(1111, 12)
-    heldout = tasks(54122, 10, excluded={task.question for task in training})
+    training = tasks(args.train_seed, 12)
+    heldout = tasks(args.holdout_seed, 10,
+                    excluded={task.question for task in training})
     probe = AdaptiveChoiceProbe()
     initial = [probe.choose(t.context) for t in heldout]
     training_results = []
@@ -139,13 +192,12 @@ def main() -> int:
     outcome = []
     for i, task in enumerate(heldout):
         result = infer(task)
+        observed = execute_choice(task, result, changed[i])
         outcome.append({
-            "group": task.group,"question": task.question,"expected_answer": task.correct,
-            **result,"baseline_action": initial[i],
-            "learned_action": changed[i],
-            "baseline_correct": result["model_correct"],
-            "learned_correct": (result["model_correct"] if changed[i]=="ANSWER" else True),
-            "unnecessary_verify": changed[i]=="VERIFY" and result["model_correct"],
+            "group": task.group, "question": task.question,
+            "expected_answer": task.correct, **result,
+            "baseline_action": initial[i], "learned_action": changed[i],
+            "baseline_correct": result["model_correct"], **observed,
         })
         print(f"HELDOUT {i+1}/{len(heldout)} {task.group} model_correct={result['model_correct']}",
               flush=True)
@@ -156,6 +208,8 @@ def main() -> int:
         "baseline_accuracy":sum(e["baseline_correct"] for e in outcome)/len(outcome),
         "learned_accuracy":sum(e["learned_correct"] for e in outcome)/len(outcome),
         "verify_fraction":sum(e["learned_action"]=="VERIFY" for e in outcome)/len(outcome),
+        "verification_executions":sum(e["verification_executed"] for e in outcome),
+        "measured_verifier_seconds":sum(e["verification_seconds"] or 0.0 for e in outcome),
         "unnecessary_verifies":sum(e["unnecessary_verify"] for e in outcome),
         "baseline_utility":sum(1.0 if e["baseline_correct"] else 0.0 for e in outcome)/len(outcome),
         "learned_utility":sum((1 if e["learned_correct"] else 0) -
@@ -168,6 +222,7 @@ def main() -> int:
     record={"schema":"LOCAL_VERA_ARITHMETIC_FEEDBACK_TRIAL_SOURCE_ONLY_V1",
             "source":"loopback-local-model-plus-independent-python-integer-oracle",
             "feedback_source":"OBSERVED_LOCAL_MODEL_AND_DETERMINISTIC_ORACLE",
+            "train_seed":args.train_seed,"holdout_seed":args.holdout_seed,
             "model_cognition":"NOT_QUALIFIED","self_authorship":"NOT_ESTABLISHED",
             "training":training_results,"holdout":outcome,"stats":stats,
             "learner_snapshot":probe.snapshot()}
