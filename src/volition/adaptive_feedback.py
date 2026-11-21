@@ -288,3 +288,139 @@ class AdaptiveChoiceProbe:
             if recorded != probe._weights[action]:
                 raise ValueError("snapshot weights disagree with replay")
         return probe
+
+
+# Opt-in family separation. The legacy AdaptiveChoiceProbe state intentionally
+# has no family provenance and must NOT be silently imported as scoped evidence.
+_SCOPED_SCHEMA = "VOLITION_FAMILY_SCOPED_FEEDBACK_SOURCE_ONLY_V1"
+_FAMILY = re.compile(r"[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*\Z")
+_MAX_FAMILIES = 8
+
+
+def _family(value: object) -> str:
+    if (type(value) is not str or not 3 <= len(value) <= 64
+        or _FAMILY.fullmatch(value) is None):
+        raise ValueError("task family must be an explicit lowercase dotted identifier")
+    return value
+
+
+def _source_digest(value: object) -> str:
+    if type(value) is not str or _DIGEST.fullmatch(value) is None:
+        raise ValueError("source digest must be 64 lowercase hexadecimal characters")
+    return value
+
+
+class ScopedAdaptiveChoiceProbe:
+    """Source-only domain-segregated feedback for optional future research.
+
+    An explicit family identifier and an immutable source digest bind each
+    independent local learner. The caller supplies both: source hash equality
+    is NOT authentication, authorization, or task-category verification.
+    Unknown domains have no fallback to numerical similarities or legacy
+    unscoped feedback. No host actions, identity or memory writes occur.
+    """
+
+    authority_effect = False
+    feedback_authentication = "UNVERIFIED_CALLER_ASSERTION"
+    self_authorship = "NOT_ESTABLISHED"
+    phenomenology = "UNRESOLVED"
+
+    def __init__(self) -> None:
+        self._scopes: dict[str, tuple[str, AdaptiveChoiceProbe]] = {}
+        self._seen_receipts: set[str] = set()
+
+    def _get(self, family: str, source_sha256: str) -> AdaptiveChoiceProbe:
+        family = _family(family)
+        source_sha256 = _source_digest(source_sha256)
+        entry = self._scopes.get(family)
+        if entry is None:
+            raise ValueError("unbound task family: no scoped feedback")
+        digest, probe = entry
+        if source_sha256 != digest:
+            raise ValueError("source digest mismatch for task family")
+        return probe
+
+    def observe(self, family: str, source_sha256: str,
+                context: EvidenceContext, action: str, success: bool,
+                event_id: str) -> None:
+        family = _family(family)
+        source_sha256 = _source_digest(source_sha256)
+        if type(event_id) is not str or _RECEIPT.fullmatch(event_id) is None:
+            raise ValueError("opaque feedback event ID invalid")
+        receipt_digest = sha256(event_id.encode("ascii")).hexdigest()
+        if receipt_digest in self._seen_receipts:
+            raise ValueError("feedback replay across task families rejected")
+        entry = self._scopes.get(family)
+        if entry is not None and entry[0] != source_sha256:
+            raise ValueError("source digest mismatch for task family")
+        if entry is None and len(self._scopes) >= _MAX_FAMILIES:
+            raise ValueError("task-family capacity exceeded")
+        # For a new family, wait until *after* the underlying observation
+        # succeeds to register it. Failed input never creates a scope.
+        probe = entry[1] if entry is not None else AdaptiveChoiceProbe()
+        probe.observe(context, action, success, event_id)
+        if entry is None:
+            self._scopes[family] = (source_sha256, probe)
+        self._seen_receipts.add(receipt_digest)
+
+    def consolidate(self, family: str, source_sha256: str, *,
+                    epochs: int) -> None:
+        self._get(family, source_sha256).consolidate(epochs=epochs)
+
+    def choose_with_cost_assumption(
+        self, family: str, source_sha256: str, context: EvidenceContext, *,
+        verifier_success_claim: float, reference_cost: float,
+    ) -> str:
+        return self._get(family, source_sha256).choose_with_cost_assumption(
+            context, verifier_success_claim=verifier_success_claim,
+            reference_cost=reference_cost
+        )
+
+    def snapshot(self) -> dict:
+        return {
+            "schema": _SCOPED_SCHEMA,
+            "authority_effect": False,
+            "feedback_authentication": self.feedback_authentication,
+            "self_authorship": self.self_authorship,
+            "scopes": [
+                {"family": family, "source_sha256": digest,
+                 "probe": probe.snapshot()}
+                for family, (digest, probe) in sorted(self._scopes.items())
+            ],
+        }
+
+    @classmethod
+    def from_snapshot(cls, payload: dict) -> "ScopedAdaptiveChoiceProbe":
+        if type(payload) is not dict or set(payload) != {
+            "schema", "authority_effect", "feedback_authentication",
+            "self_authorship", "scopes"
+        }:
+            raise ValueError("scoped snapshot envelope invalid")
+        if (payload["schema"] != _SCOPED_SCHEMA
+            or payload["authority_effect"] is not False
+            or payload["feedback_authentication"] != cls.feedback_authentication
+            or payload["self_authorship"] != cls.self_authorship):
+            raise ValueError("scoped snapshot must not claim trusted authority")
+        scopes = payload["scopes"]
+        if type(scopes) is not list or len(scopes) > _MAX_FAMILIES:
+            raise ValueError("scoped history count invalid")
+        restored = cls()
+        for item in scopes:
+            if type(item) is not dict or set(item) != {
+                "family", "source_sha256", "probe"
+            }:
+                raise ValueError("scoped family record invalid")
+            family = _family(item["family"])
+            digest = _source_digest(item["source_sha256"])
+            if family in restored._scopes:
+                raise ValueError("duplicate task family in snapshot")
+            probe = AdaptiveChoiceProbe.from_snapshot(item["probe"])
+            if not probe.updates:
+                raise ValueError("empty task family has no feedback")
+            for event in probe.snapshot()["events"]:
+                receipt = event["receipt_sha256"]
+                if receipt in restored._seen_receipts:
+                    raise ValueError("cross-family feedback replay in snapshot")
+                restored._seen_receipts.add(receipt)
+            restored._scopes[family] = (digest, probe)
+        return restored

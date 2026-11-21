@@ -398,3 +398,74 @@ so the next release gate still requires an independently specified
 task-family contract, heldout qualification and trusted verifier
 outcomes. No effect authority was added, no runtime deployed, and the
 PR remains a source-only draft.
+
+
+## 2026-11-21 follow-up: optional family-scoped source-bound feedback
+
+An independent reviewer already demonstrated that the frozen arithmetic learner
+did not transfer reliably to letter-counting (11/24 final correct, medium
+0/8). The preceding fix restricted the numerical (uncertainty,
+consequence) pair, but **the exact same numbers can describe a different
+task family**. There was no genuine family evidence in the historical
+`AdaptiveChoiceProbe` snapshot, so copying it into another domain would
+silently manufacture the missing binding.
+
+This small source candidate introduces an **opt-in separate**
+`ScopedAdaptiveChoiceProbe`. It uses a distinct underlying
+`AdaptiveChoiceProbe` instance for each explicitly named task family,
+bound to exactly one lower-case SHA-256 source digest. Unknown families
+are **rejected without fallback** rather than inheriting weights based
+on matching numerical features. A source digest change for an existing
+family also rejects; replayed event IDs reject across all families.
+A failed new-family observation cannot create a family. Strict snapshots
+retain the family, digest, and ordered existing replayable feedback;
+restoring them enforces family isolation, duplicated family/receipt
+checks, and original source-derived numerical weights.
+
+This is **not automatic task classification**. Family identifiers and
+source hashes are *caller-asserted*, and the hash is merely a content
+equality binding, not trusted proof that feedback truly came from a
+particular task family, that outcomes are authentic, or that the source
+is independently verified. A caller that lies consistently about the
+family can still contaminate it. No active VolitionEngine uses this
+wrapper; it is source-only and does not migrate legacy unscoped history.
+The original `AdaptiveChoiceProbe` API and historical snapshot schema
+are unchanged.
+
+The first four domain-separation tests were RED before implementation;
+a fifth rejected alias-like noncanonical family tags (e.g. repeated
+periods) after a separate RED→GREEN correction. Test cases cover a
+string-count request with exactly the same numeric evidence as
+arithmetic, independent family updates, cross-family replay prevention,
+source-digest mismatches, tampered restored snapshots, invalid tags,
+and no silent fallback.
+
+### Read-only reconstruction from actual prior local-model feedback
+
+Without asking the local model another question or retraining it on
+new data, I reopened the SHA-pinned V4 arithmetic trial receipt
+`6926bd062a9d0a717b1306b36d609f1a5a9fdead21f6a1d412c38ac43020fdad`.
+I re-fed its 36 historically observed arithmetic training cases as
+72 ordered action-feedback updates into one scoped family
+`arithmetic.integer`, using the *exact V4 receipt digest* as the
+source identity, and replayed the original 40 extra numerical
+consolidation epochs.
+
+**The resulting scoped underlying probe snapshot matched the stored
+original V4 learner snapshot exactly**, including all weights,
+recorded events and epoch count. A fresh scoped restore preserved that
+identity. Its 30 frozen arithmetic evaluation proposals were unchanged
+at test costs 0.02→30 VERIFY, 0.24→20, 0.80→0 and 1.00→0. The
+`strings.letter_count` family with identical numerical features
+rejected `unbound task family`; using a different source digest with
+the arithmetic label rejected `source digest mismatch`.
+
+This verifies a **source/feedback-state reconstruction and explicit
+cross-family rejection**. It does **not** repeat the independent
+letter-counting model test, qualify production routing, attest model
+binary identity, authorize effects, or demonstrate subjective
+autonomy, awareness, or generalized learning. A genuine deployment
+would require externally established task-family classification,
+trusted source and outcome attestation, a controlled family-specific
+heldout suite, an actual verifier provider and owner-approved runtime
+binding. Until then, no merge/install is asserted.

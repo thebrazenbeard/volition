@@ -355,3 +355,119 @@ def test_cost_assumption_requires_observed_answer_action_at_same_pair():
         case(.8, .7, .1), verifier_success_claim=1.0,
         reference_cost=.24
     ) in ("ANSWER", "VERIFY")
+
+
+def test_scoped_feedback_does_not_reuse_arithmetic_evidence_for_strings():
+    from volition.adaptive_feedback import ScopedAdaptiveChoiceProbe
+    scoped = ScopedAdaptiveChoiceProbe()
+    arithmetic = "a" * 64
+    strings = "b" * 64
+    same_features = case(.9, .7, .24)
+    scoped.observe("arithmetic.integer", arithmetic, same_features,
+                   "ANSWER", False, "arith-1")
+    # The same numerical features in a different domain MUST NOT be an
+    # automatically supported task, irrespective of which action would win.
+    with pytest.raises(ValueError, match="unbound task family"):
+        scoped.choose_with_cost_assumption(
+            "strings.letter_count", strings, same_features,
+            verifier_success_claim=1.0, reference_cost=.24
+        )
+    scoped.observe("strings.letter_count", strings, same_features,
+                   "ANSWER", True, "string-1")
+    assert scoped.choose_with_cost_assumption(
+        "arithmetic.integer", arithmetic, same_features,
+        verifier_success_claim=1.0, reference_cost=.24
+    ) in ("ANSWER", "VERIFY")
+    assert scoped.choose_with_cost_assumption(
+        "strings.letter_count", strings, same_features,
+        verifier_success_claim=1.0, reference_cost=.24
+    ) in ("ANSWER", "VERIFY")
+    assert scoped.snapshot()["scopes"][0]["probe"]["weights"] != (
+        scoped.snapshot()["scopes"][1]["probe"]["weights"]
+    )
+
+
+def test_scoped_feedback_rejects_same_family_different_source_and_replayed_events():
+    from volition.adaptive_feedback import ScopedAdaptiveChoiceProbe
+    scoped = ScopedAdaptiveChoiceProbe()
+    c = case(.9, .7, .24)
+    source = "c" * 64
+    scoped.observe("arithmetic.integer", source, c, "ANSWER", False, "receipt-a")
+    before = scoped.snapshot()
+    with pytest.raises(ValueError, match="source digest mismatch"):
+        scoped.observe("arithmetic.integer", "d" * 64, c, "ANSWER",
+                       True, "receipt-b")
+    with pytest.raises(ValueError, match="source digest mismatch"):
+        scoped.choose_with_cost_assumption(
+            "arithmetic.integer", "d" * 64, c,
+            verifier_success_claim=1.0, reference_cost=.24
+        )
+    with pytest.raises(ValueError, match="replay"):
+        scoped.observe("strings.letter_count", "e" * 64, c,
+                       "ANSWER", False, "receipt-a")
+    assert scoped.snapshot() == before
+
+
+def test_scoped_feedback_restore_keeps_domains_isolated_and_rejects_forgery():
+    from volition.adaptive_feedback import ScopedAdaptiveChoiceProbe
+    a = "1" * 64
+    b = "2" * 64
+    p = ScopedAdaptiveChoiceProbe()
+    c = case(.9, .7, .24)
+    p.observe("arithmetic.integer", a, c, "ANSWER", False, "one")
+    p.observe("strings.letter_count", b, c, "ANSWER", True, "two")
+    p.consolidate("arithmetic.integer", a, epochs=4)
+    blob = json.loads(json.dumps(p.snapshot()))
+    restored = ScopedAdaptiveChoiceProbe.from_snapshot(blob)
+    assert restored.snapshot() == blob
+    with pytest.raises(ValueError, match="unbound task family"):
+        restored.choose_with_cost_assumption(
+            "arithmetic.decimal", a, c,
+            verifier_success_claim=1.0, reference_cost=.24
+        )
+    with pytest.raises(ValueError, match="frozen"):
+        restored.observe("arithmetic.integer", a, c, "ANSWER", True, "later")
+    for change in ("duplicate_family", "duplicate_receipt", "untrusted_effect", "extra_key"):
+        tampered = copy.deepcopy(blob)
+        if change == "duplicate_family":
+            tampered["scopes"][1]["family"] = "arithmetic.integer"
+        if change == "duplicate_receipt":
+            tampered["scopes"][1]["probe"]["events"][0]["receipt_sha256"] = (
+                tampered["scopes"][0]["probe"]["events"][0]["receipt_sha256"]
+            )
+        if change == "untrusted_effect":
+            tampered["authority_effect"] = True
+        if change == "extra_key":
+            tampered["unknown"] = "ignored?"
+        with pytest.raises((ValueError, TypeError)):
+            ScopedAdaptiveChoiceProbe.from_snapshot(tampered)
+
+
+def test_scoped_feedback_invalid_tags_do_not_create_state():
+    from volition.adaptive_feedback import ScopedAdaptiveChoiceProbe
+    scoped = ScopedAdaptiveChoiceProbe()
+    c = case(.5, .7, .24)
+    for family in ("", "Arithmetic.Integer", "arithmetic/../strings", True, 12):
+        with pytest.raises((ValueError, TypeError)):
+            scoped.observe(family, "b"*64, c, "ANSWER", True, "safe-id")
+    for digest in ("", "z"*64, "B"*64, True, "1"*63):
+        with pytest.raises((ValueError, TypeError)):
+            scoped.observe("arithmetic.integer", digest, c,
+                           "ANSWER", True, "safe-id")
+    with pytest.raises((TypeError, ValueError)):
+        scoped.observe("arithmetic.integer", "b"*64, c, "ANSWER",
+                       1, "safe-id")
+    assert scoped.snapshot()["scopes"] == []
+
+
+def test_scoped_family_identifier_rejects_noncanonical_separators():
+    """Alias-like domain strings are not distinct trustworthy identifiers."""
+    from volition.adaptive_feedback import ScopedAdaptiveChoiceProbe
+    scoped = ScopedAdaptiveChoiceProbe()
+    before = scoped.snapshot()
+    for alias in ("arithmetic..integer", "arithmetic.", "arithmetic--integer",
+                  "arithmetic__integer", "arithmetic.-integer"):
+        with pytest.raises(ValueError, match="task family"):
+            scoped.observe(alias, "a"*64, case(.9,.7,.24),
+                           "ANSWER", True, "receipt-canonical")
+    assert scoped.snapshot() == before
