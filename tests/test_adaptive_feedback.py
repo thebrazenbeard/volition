@@ -214,3 +214,84 @@ def test_trial_accepts_explicit_frozen_train_and_holdout_seeds():
     assert proc.returncode == 0, proc.stderr
     assert "--train-seed" in proc.stdout
     assert "--holdout-seed" in proc.stdout
+
+
+def test_cost_assumption_recommendation_changes_with_verification_cost():
+    """When the same learned evidence is held fixed, costs can change a recommendation.
+
+    This is a bounded *decision rule*, not learned cost sensitivity or
+    calibrated accuracy. No authority is conferred by the recommendation.
+    """
+    probe = AdaptiveChoiceProbe()
+    probe.observe(case(.9,.7,.24), "ANSWER", False, "fixed-cost-training")
+    baseline = probe.snapshot()
+    cheap = case(.9, .7, .02)
+    expensive = case(.9, .7, .90)
+    assert probe.choose_with_cost_assumption(
+        cheap, verifier_success_claim=.8, reference_cost=.24
+    ) == "VERIFY"
+    assert probe.choose_with_cost_assumption(
+        expensive, verifier_success_claim=.8, reference_cost=.24
+    ) == "ANSWER"
+    assert probe.snapshot() == baseline
+    assert probe.authority_effect is False
+
+
+def test_cost_assumption_rejects_untrusted_or_missing_reliability():
+    probe = AdaptiveChoiceProbe()
+    ctx = case(.7, .7, .24)
+    with pytest.raises(TypeError):
+        probe.choose_with_cost_assumption(ctx, reference_cost=.24)
+    for bad in (True, "1", float("nan"), -0.1, 1.01):
+        with pytest.raises((TypeError, ValueError)):
+            probe.choose_with_cost_assumption(
+                ctx, verifier_success_claim=bad, reference_cost=.24
+            )
+    for bad in (True, float("inf"), -1, 1.01):
+        with pytest.raises((TypeError, ValueError)):
+            probe.choose_with_cost_assumption(
+                ctx, verifier_success_claim=1.0, reference_cost=bad
+            )
+
+
+def test_cost_assumption_uses_frozen_confidence_reference_not_evaluation_cost():
+    """Cost must not secretly change confidence fitted at fixed .24."""
+    probe = AdaptiveChoiceProbe()
+    for i, c in enumerate((case(.1,.7,.24), case(.9,.7,.24))):
+        for action in ("ANSWER", "VERIFY"):
+            probe.observe(c, action, action == ("ANSWER" if i == 0 else "VERIFY"),
+                          f"assumption-{i}-{action}")
+    probe.consolidate(epochs=12)
+    cheap = case(.9,.7,.02)
+    expensive = case(.9,.7,.98)
+    left = probe.estimate(case(.9,.7,.24), "ANSWER")
+    # The returned action changes because only the explicit cost changes.
+    assert probe.choose_with_cost_assumption(
+        cheap, verifier_success_claim=1.0, reference_cost=.24
+    ) == ("VERIFY" if (1.0-.02) > left else "ANSWER")
+    assert probe.choose_with_cost_assumption(
+        expensive, verifier_success_claim=1.0, reference_cost=.24
+    ) == ("VERIFY" if (1.0-.98) > left else "ANSWER")
+
+
+def test_cost_assumption_must_match_single_recorded_training_cost():
+    """A fabricated reference cost must not repurpose learned confidence."""
+    ctx = case(.9, .7, .24)
+    untrained = AdaptiveChoiceProbe()
+    with pytest.raises(ValueError, match="single-cost"):
+        untrained.choose_with_cost_assumption(
+            ctx, verifier_success_claim=1.0, reference_cost=.24
+        )
+    single = AdaptiveChoiceProbe()
+    single.observe(ctx, "ANSWER", False, "pinned-reference")
+    with pytest.raises(ValueError, match="single-cost"):
+        single.choose_with_cost_assumption(
+            case(.9,.7,.8), verifier_success_claim=1.0, reference_cost=.20
+        )
+    mixed = AdaptiveChoiceProbe()
+    mixed.observe(ctx, "ANSWER", False, "mixed-a")
+    mixed.observe(case(.9,.7,.8), "ANSWER", False, "mixed-b")
+    with pytest.raises(ValueError, match="single-cost"):
+        mixed.choose_with_cost_assumption(
+            case(.9,.7,.5), verifier_success_claim=1.0, reference_cost=.24
+        )

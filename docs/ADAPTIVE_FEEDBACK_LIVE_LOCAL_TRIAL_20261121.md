@@ -262,3 +262,90 @@ The calculator and deterministic gold answer are in the same evaluation
 harness. Independence, other domains, source authentication, policy
 authorization and deployment are still unqualified. Source is review
 candidate only; do not use the score as proof of life or installed learning.
+
+
+## November 21 owner response to external PR21 hostile review: cost assumptions
+
+An independent source reviewer of the exact prior head
+`40b22a21fd8f2d5adf5c75d7af97bd1da13dd9ba` reported two important
+negative controls: the original frozen selector chose exactly ten VERIFY
+actions regardless of a cost shift from 0.02 to 1.0, and an
+arithmetic-trained frozen selector transferred incompletely to nonarithmetic
+character-counting tasks (on 24 new public items, only 11/24 final correct,
+eight hard-task verifications, medium 0/8). Those results were conducted
+in a **separate reviewer workspace**, not by this source owner; they are
+evidence about limitations, not a release authorization. See the authenticated
+shared Blotter records 24743 and 24746 and PR21 review
+comment `7065700949`.
+
+### Minimal optional source response
+
+The previous `choose(context)` function remains unchanged. An explicit
+`choose_with_cost_assumption(context, *, verifier_success_claim,
+reference_cost)` now compares:
+
+- the *uncalibrated* fitted answer heuristic
+  `estimate(EvidenceContext(uncertainty, consequence, reference_cost), "ANSWER")`,
+  and
+- the caller's **unverified** `verifier_success_claim` minus the requested
+  `context.verification_cost`.
+
+The optional rule selects VERIFY only when its claimed net benefit exceeds
+the fitted answer score; ties favor ANSWER. It requires at least one real
+feedback record and the same exact `reference_cost` across **all** recorded
+training contexts, rejecting a missing record, mixed training costs or a
+fabricated reference cost. Invalid Boolean/nonfinite/out-of-range numerical
+claims are rejected. A decision does **not** update weights or create
+authority. The reference cost is necessary because the existing learner saw
+only a fixed 0.24 cost in training: evaluating the fitted answer score at
+an unfamiliar new cost directly would misrepresent out-of-support data.
+
+**This does not learn a cost-dependent reward.** It introduces a simple
+caller-parameterized expected-utility *rule* over an uncalibrated score,
+with an explicitly asserted verifier-success probability. A claimed rate
+of 1.0 is permissible only as an *assumption*, not authenticated proof that
+some external verification service is infallible. Future work must test
+actual verifier reliability and externally measured total route cost before
+this can govern real decisions.
+
+Four new behavioral tests were initially RED for missing method/unsafe
+reference; all passed after implementation and explicit source-binding
+checks. The existing core selector and source state schema were preserved.
+
+### Executed private V4 cost-shift counterfactual, no new model inference
+
+To test only the new source rule, I reopened the previously pinned V4 raw
+local-model responses (SHA-256
+`6926bd062a9d0a717b1306b36d609f1a5a9fdead21f6a1d412c38ac43020fdad`)
+and **reconstructed the frozen learner**. Each candidate cost evaluation
+used exactly the original 30 recorded model answers. Wherever the *new*
+selector chose VERIFY, `execute_choice` really called the local Python
+integer calculator again and recorded its returned integer and duration.
+No Ollama calls, retraining, new model answers or post-hoc tuning occurred.
+
+| Assumed verification cost | Actual calculator calls | Correct final outputs | Illustrative net utility |
+|---|---:|---:|---:|
+| 0.02 | 30 | 30/30 | 0.980 |
+| 0.24 | 20 | 29/30 | 0.807 |
+| 0.80 | 0 | 17/30 | 0.567 |
+| 1.00 | 0 | 17/30 | 0.567 |
+
+The original model-alone control remained **17/30 (0.567 utility)**. The
+earlier frozen *cost-blind* policy was **26/30** with ten checks at each cost;
+at cost 0.80 its illustrative utility was 0.600, **better** than the
+new rule's 0.567. Therefore the rule is not uniformly superior and does not
+establish calibrated decision quality. Its defensible positive effect is
+that **increasing a declared cost now changes the proposal without falsifying
+the original model evidence**. It is deliberately optional.
+
+Private, reproducible **off-Git** cost-replay script:
+`D:\VERA\_agent-work\bt2-vera-adaptive-choice-20261121-private-receipts\v4_cost_assumption_replay_v1.py`
+SHA-256 `76f9ab2b0d6904d143020cd611c020295d5e9e5c7057d31fe744ab195653642e`.
+
+Private results receipt:
+`D:\VERA\_agent-work\bt2-vera-adaptive-choice-20261121-private-receipts\v4-cost-assumption-replay-20261121-private.json`
+SHA-256 `edccafbed1a03ea17a087f7ddbbad90a1e82348c9b3672c8af892a0527d364b5`.
+
+The private experiment had only public arithmetic, no user data. No
+protected runtime activation, canonical memory write, model-weight change,
+production tool connection, merged code, or authorizing review was performed.

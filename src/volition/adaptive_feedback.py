@@ -115,6 +115,38 @@ class AdaptiveChoiceProbe:
             raise TypeError("context must be a typed EvidenceContext")
         return "VERIFY" if self.estimate(context, "VERIFY") > self.estimate(context, "ANSWER") else "ANSWER"
 
+    def choose_with_cost_assumption(
+        self,
+        context: EvidenceContext,
+        *,
+        verifier_success_claim: float,
+        reference_cost: float,
+        social_frame: str = "neutral",
+    ) -> str:
+        """Advisory cost comparison, not learned cost calibration or authority.
+
+        The trial learner saw only one reference cost. Keep its model-answer
+        score at that fitted context, instead of treating other costs as
+        independently supported calibration data. Both the success claim and
+        reference cost come from the unverified caller; the score itself is
+        an uncalibrated logistic heuristic. This rule never updates weights.
+        """
+        _frame(social_frame)
+        if type(context) is not EvidenceContext:
+            raise TypeError("context must be a typed EvidenceContext")
+        verified_claim = _unit(verifier_success_claim, "verifier_success_claim")
+        original_cost = _unit(reference_cost, "reference_cost")
+        if not self._events or any(
+            event["context"][2] != original_cost for event in self._events
+        ):
+            raise ValueError("single-cost training history and reference required")
+        reference = EvidenceContext(
+            context.uncertainty, context.consequence, original_cost
+        )
+        answer_score = self.estimate(reference, "ANSWER")
+        verification_net = verified_claim - context.verification_cost
+        return "VERIFY" if verification_net > answer_score else "ANSWER"
+
     def _advance(self, context: EvidenceContext, action: str, success: bool) -> None:
         features = context.features()
         weights = self._weights[action]
