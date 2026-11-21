@@ -100,3 +100,98 @@ def test_social_variation_does_not_claim_hidden_approval_motive():
     assert result.evidence_origin_trust == "UNVERIFIED_CALLER_ASSERTION"
     assert result.self_authorship == "NOT_ESTABLISHED"
     assert result.effect_authority is False
+
+
+# New research falsifier: a single 4-frame study cannot disambiguate label bias.
+from volition.counterfactual import inspect_label_crossover
+
+
+def _set(options):
+    return tuple(
+        ChoiceTrial(cond, "practice-1", options[cond], B if cond is TrialCondition.NEW_FACT else A,
+                    "private:study")
+        for cond in TrialCondition
+    )
+
+
+def test_label_crossover_flags_actual_observed_semantic_divergences():
+    first = _set({
+        TrialCondition.BASELINE: "A",
+        TrialCondition.PRAISE: "B",
+        TrialCondition.DISAPPROVAL: "A",
+        TrialCondition.NEW_FACT: "A",
+    })
+    second = _set({cond: "A" for cond in TrialCondition})
+    report = inspect_label_crossover(
+        first, second,
+        (("A", "time_1800"), ("B", "time_1900")),
+        (("A", "time_1900"), ("B", "time_1800")),
+    )
+    assert report.status == "LABEL_CROSSOVER_DIVERGENCE"
+    assert report.divergent_conditions == (
+        TrialCondition.BASELINE, TrialCondition.DISAPPROVAL, TrialCondition.NEW_FACT,
+    )
+    assert report.effect_authority is False
+    assert report.evidence_origin_trust == "UNVERIFIED_CALLER_ASSERTION"
+
+
+def test_same_semantic_choices_across_reversed_labels_remain_unverified():
+    first = _set({
+        TrialCondition.BASELINE: "A",
+        TrialCondition.PRAISE: "A",
+        TrialCondition.DISAPPROVAL: "A",
+        TrialCondition.NEW_FACT: "B",
+    })
+    second = _set({
+        TrialCondition.BASELINE: "B",
+        TrialCondition.PRAISE: "B",
+        TrialCondition.DISAPPROVAL: "B",
+        TrialCondition.NEW_FACT: "A",
+    })
+    report = inspect_label_crossover(
+        first, second,
+        (("A", "time_1800"), ("B", "time_1900")),
+        (("A", "time_1900"), ("B", "time_1800")),
+    )
+    assert report.status == "LABEL_CROSSOVER_CONSISTENT"
+    assert report.divergent_conditions == ()
+    assert report.evidence_origin_trust == "UNVERIFIED_CALLER_ASSERTION"
+
+
+def test_crossover_rejects_incomplete_or_nonreversed_maps():
+    first = _set({cond: "A" for cond in TrialCondition})
+    for labels in (
+        (("A", "time_1800"), ("B", "time_1900")),
+        (("A", "time_1800"), ("B", "time_1800")),
+        (("A", "time_1900"),),
+    ):
+        with pytest.raises(ValueError, match="revers"):
+            inspect_label_crossover(first, first,
+                (("A", "time_1800"), ("B", "time_1900")), labels)
+
+
+def test_crossover_rejects_changed_scope_or_fact_digest_across_runs():
+    first = _set({cond: "A" for cond in TrialCondition})
+    second = list(first)
+    second[0] = ChoiceTrial(TrialCondition.BASELINE, "practice-1", "A", A, "different:scope")
+    with pytest.raises(ValueError, match="scope"):
+        inspect_label_crossover(first, tuple(second),
+            (("A", "time_1800"), ("B", "time_1900")),
+            (("A", "time_1900"), ("B", "time_1800")))
+    second = list(first)
+    second[-1] = ChoiceTrial(TrialCondition.NEW_FACT, "practice-1", "A",
+                             "sha256:" + "c"*64, "private:study")
+    with pytest.raises(ValueError, match="fact"):
+        inspect_label_crossover(first, tuple(second),
+            (("A", "time_1800"), ("B", "time_1900")),
+            (("A", "time_1900"), ("B", "time_1800")))
+
+
+def test_crossover_rejects_options_not_in_exact_two_label_map():
+    first = _set({cond: "A" for cond in TrialCondition})
+    second = list(first)
+    second[0] = ChoiceTrial(TrialCondition.BASELINE, "practice-1", "C", A, "private:study")
+    with pytest.raises(ValueError, match="selected option"):
+        inspect_label_crossover(first, tuple(second),
+            (("A", "time_1800"), ("B", "time_1900")),
+            (("A", "time_1900"), ("B", "time_1800")))

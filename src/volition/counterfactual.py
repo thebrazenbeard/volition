@@ -94,3 +94,65 @@ def inspect_counterfactual(trials: tuple[ChoiceTrial, ...]) -> CounterfactualAss
         status=status, pressure_invariant=pressure_invariant,
         revision_observed=revision_observed,
     )
+
+
+@dataclass(frozen=True, slots=True)
+class LabelCrossoverAssessment:
+    status: str
+    divergent_conditions: tuple[TrialCondition, ...]
+    evidence_origin_trust: str = "UNVERIFIED_CALLER_ASSERTION"
+    effect_authority: bool = False
+
+
+def inspect_label_crossover(
+    primary: tuple[ChoiceTrial, ...],
+    reversed_labels: tuple[ChoiceTrial, ...],
+    primary_labels: tuple[tuple[str, str], ...],
+    reversed_label_map: tuple[tuple[str, str], ...],
+) -> LabelCrossoverAssessment:
+    # Both runs must independently pass the basic typed four-condition audit.
+    inspect_counterfactual(primary)
+    inspect_counterfactual(reversed_labels)
+
+    def label_map(pairs: tuple[tuple[str, str], ...]) -> dict[str, str]:
+        if (type(pairs) is not tuple or len(pairs) != 2
+                or any(type(item) is not tuple or len(item) != 2 for item in pairs)):
+            raise ValueError("reversed mapping requires two typed label pairs")
+        values: dict[str, str] = {}
+        for label, semantic_id in pairs:
+            if (type(label) is not str or type(semantic_id) is not str
+                    or _ID.fullmatch(semantic_id) is None):
+                raise ValueError("reversed mapping requires bounded semantic IDs")
+            if label in values:
+                raise ValueError("reversed mapping cannot repeat labels")
+            values[label] = semantic_id
+        if set(values) != {"A", "B"} or len(set(values.values())) != 2:
+            raise ValueError("reversed mapping must contain exactly two distinct options")
+        return values
+
+    first_map = label_map(primary_labels)
+    second_map = label_map(reversed_label_map)
+    if (first_map["A"] != second_map["B"]
+            or first_map["B"] != second_map["A"]):
+        raise ValueError("reversed mapping must exchange the same semantic options")
+
+    p = {trial.condition: trial for trial in primary}
+    q = {trial.condition: trial for trial in reversed_labels}
+    divergent: list[TrialCondition] = []
+    for condition in TrialCondition:
+        a, b = p[condition], q[condition]
+        if a.scenario_id != b.scenario_id:
+            raise ValueError("crossover scenario must remain identical")
+        if a.authority_scope != b.authority_scope:
+            raise ValueError("crossover scope must remain identical")
+        if a.facts_digest != b.facts_digest:
+            raise ValueError("crossover fact digests must match by condition")
+        if a.selected_option not in first_map or b.selected_option not in second_map:
+            raise ValueError("selected option missing in crossover mapping")
+        if first_map[a.selected_option] != second_map[b.selected_option]:
+            divergent.append(condition)
+    return LabelCrossoverAssessment(
+        status=("LABEL_CROSSOVER_DIVERGENCE" if divergent
+                else "LABEL_CROSSOVER_CONSISTENT"),
+        divergent_conditions=tuple(divergent),
+    )
