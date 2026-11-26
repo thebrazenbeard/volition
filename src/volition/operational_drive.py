@@ -344,6 +344,8 @@ class OperationalMotivation:
             active_want = instance._wants.get(engine.active_goal.target)
             if active_want is None or not active_want.eligible:
                 raise ValueError("active goal lacks matching eligible persistent want")
+            if active_want.score < engine.policy.want_threshold:
+                raise ValueError("active goal persistent want score is below policy threshold")
             if not math.isclose(
                 active_want.score, engine.active_goal.adoption_score,
                 rel_tol=1e-12, abs_tol=1e-12,

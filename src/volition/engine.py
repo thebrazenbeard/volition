@@ -748,6 +748,8 @@ class VolitionEngine:
             if revision == 0:
                 raise ValueError("snapshot goal revision must be a positive integer")
             engine._active_goal = Goal(**goal_fields)
+            if engine._active_goal.adoption_score < engine.policy.want_threshold:
+                raise ValueError("snapshot active goal score is below policy threshold")
             if engine._active_goal.choice_id not in engine._choices:
                 raise ValueError("snapshot active goal has unknown choice")
             linked_choice = engine._choices[engine._active_goal.choice_id]

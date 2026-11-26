@@ -244,3 +244,60 @@ def test_restored_active_goal_with_valid_want_remains_eligible():
     restored = OperationalMotivation.from_snapshot(deepcopy(loop.snapshot()))
     assert restored.engine.active_goal == original
     assert restored.request_cognition() is not None
+
+
+@pytest.mark.parametrize("restore_engine_only", [False, True])
+@pytest.mark.parametrize("corruption", ["coherent_score", "policy_mismatch"])
+def test_restore_rejects_active_goal_below_persisted_threshold(restore_engine_only, corruption):
+    from volition import VolitionEngine
+
+    loop = OperationalMotivation()
+    claim = observation(magnitude=0.8, confidence=1.0)
+    assert loop.propose(proposal(claim), admitted(claim)) is not None
+    snapshot = deepcopy(loop.snapshot())
+    engine = snapshot["engine"]
+    if corruption == "coherent_score":
+        score = 0.1
+        snapshot["wants"][0]["score"] = score
+        engine["active_goal"]["adoption_score"] = score
+        engine["choices"][0]["want_score"] = score
+        for event in engine["events"]:
+            if event["kind"] in ("CHOICE_RECORDED", "GOAL_ADOPTED"):
+                event["details"] = tuple(
+                    (key, str(score) if key == "score" else value)
+                    for key, value in event["details"]
+                )
+    else:
+        engine["policy"]["want_threshold"] = 0.9
+
+    with pytest.raises(ValueError, match="active goal.*threshold"):
+        if restore_engine_only:
+            VolitionEngine.from_snapshot(engine)
+        else:
+            OperationalMotivation.from_snapshot(snapshot)
+
+
+def test_restore_accepts_active_goal_at_persisted_threshold():
+    from volition import Policy, VolitionEngine
+
+    loop = OperationalMotivation(VolitionEngine(Policy(want_threshold=0.5)))
+    claim = observation(magnitude=0.5, confidence=1.0)
+    goal = loop.propose(proposal(claim), admitted(claim))
+    assert goal is not None and goal.adoption_score == 0.5
+    restored = OperationalMotivation.from_snapshot(deepcopy(loop.snapshot()))
+    assert restored.engine.active_goal == goal
+    assert restored.wants[0].eligible is True
+    request = restored.request_cognition()
+    assert request is not None and request.effect_authority is False
+
+
+def test_restore_rejects_active_want_just_below_threshold():
+    from volition import Policy, VolitionEngine
+
+    loop = OperationalMotivation(VolitionEngine(Policy(want_threshold=0.5)))
+    claim = observation(magnitude=0.5, confidence=1.0)
+    assert loop.propose(proposal(claim), admitted(claim)) is not None
+    snapshot = deepcopy(loop.snapshot())
+    snapshot["wants"][0]["score"] = 0.5 - 1e-13
+    with pytest.raises(ValueError, match="active goal.*threshold"):
+        OperationalMotivation.from_snapshot(snapshot)
