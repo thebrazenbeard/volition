@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import math
 
 from .models import DriveKind, ProvenanceClass, Signal
+from .source_validation import admissible_source
 
 
 _CURRENT_PROVENANCE = frozenset({
@@ -16,13 +17,21 @@ _NON_REANIMATABLE = frozenset({
     'REVOKED',
     'CONTRADICTED',
     'REVISED',
+    # Conations emits lifecycle event verbs; old exports may contain either form.
+    'COMPLETE',
+    'REVOKE',
+    'CONTRADICT',
+    'REVISE',
 })
 
 
 def _unit(value: float, *, name: str) -> float:
+    # A coercible bool or string is not a measured conation strength.
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f'{name} must be numeric')
     try:
         resolved = float(value)
-    except (TypeError, ValueError) as exc:
+    except (TypeError, ValueError, OverflowError) as exc:
         raise ValueError(f'{name} must be numeric') from exc
     if not math.isfinite(resolved) or not 0.0 <= resolved <= 1.0:
         raise ValueError(f'{name} must be finite and in [0, 1]')
@@ -92,7 +101,7 @@ class ConationBridge:
             raise ValueError('current evidence target does not match conation record')
         if current.kind is not record.kind:
             raise ValueError('current evidence drive family does not match conation record')
-        if not current.source or current.source == 'unspecified':
+        if not admissible_source(current.source, require_explicit=True):
             raise ValueError('current evidence requires an explicit source')
 
         historical = Signal(

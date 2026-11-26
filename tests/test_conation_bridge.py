@@ -74,7 +74,10 @@ def test_reappraisal_requires_same_target_and_drive_family():
         ConationBridge.reappraise(record(kind=DriveKind.OPEN_LOOP), current_signal(kind=DriveKind.SELF_MODEL))
 
 
-@pytest.mark.parametrize('status', ['COMPLETED', 'REVOKED', 'CONTRADICTED', 'REVISED'])
+@pytest.mark.parametrize('status', [
+    'COMPLETED', 'REVOKED', 'CONTRADICTED', 'REVISED',
+    'COMPLETE', 'REVOKE', 'CONTRADICT', 'REVISE',
+])
 def test_terminal_or_superseded_record_cannot_be_reanimated(status):
     with pytest.raises(ValueError):
         ConationBridge.reappraise(record(status), current_signal())
@@ -99,6 +102,19 @@ def test_reappraised_history_never_creates_choice_or_goal_automatically():
     assert wants[0].eligible is True
     assert engine.choices == ()
     assert engine.active_goal is None
+
+
+@pytest.mark.parametrize('field', ['magnitude', 'confidence'])
+@pytest.mark.parametrize('value', [True, False, '0.5', b'0.5', None])
+def test_conation_record_rejects_coercible_numeric_evidence(field, value):
+    kwargs = dict(
+        record_id='conation-001', target='x', kind=DriveKind.OPEN_LOOP,
+        magnitude=0.9, confidence=0.8, status='PRESENT',
+        source_locator='conations:synthetic',
+    )
+    kwargs[field] = value
+    with pytest.raises(ValueError):
+        ConationRecord(**kwargs)
 
 
 @pytest.mark.parametrize(

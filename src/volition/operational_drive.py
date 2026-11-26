@@ -338,6 +338,15 @@ class OperationalMotivation:
             if item.evidence_id not in evidence or item.target in instance._latches or item.target in instance._wants:
                 raise ValueError("want lacks admitted evidence or conflicts with protection")
             instance._wants[item.target] = item
-        if engine.active_goal is not None and engine.active_goal.target in instance._latches:
-            raise ValueError("protected active goal cannot be restored")
+        if engine.active_goal is not None:
+            if engine.active_goal.target in instance._latches:
+                raise ValueError("protected active goal cannot be restored")
+            active_want = instance._wants.get(engine.active_goal.target)
+            if active_want is None or not active_want.eligible:
+                raise ValueError("active goal lacks matching eligible persistent want")
+            if not math.isclose(
+                active_want.score, engine.active_goal.adoption_score,
+                rel_tol=1e-12, abs_tol=1e-12,
+            ):
+                raise ValueError("active goal adoption score differs from persistent want")
         return instance
