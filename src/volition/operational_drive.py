@@ -187,6 +187,7 @@ class OperationalMotivation:
             raise ValueError("protection uses the independent protection ingress")
         if self._admit_once(admitted) is None:
             return None
+        self._expire_active_goal()
         if claim.target in self._latches:
             return None
 
@@ -274,15 +275,37 @@ class OperationalMotivation:
 
     def complete(self, admitted: AdmittedGoalCompletion) -> bool:
         """Reappraise after an exact caller-admitted outcome receipt, not scalar credit."""
+        if not isinstance(admitted, AdmittedGoalCompletion):
+            raise TypeError("goal completion requires caller-admitted evidence")
+        self._expire_active_goal()
         completed = self.engine.complete_goal(admitted)
         if completed:
             self._wants.pop(admitted.claim.target, None)
         return completed
 
+    def _expire_active_goal(self) -> None:
+        active = self.engine.active_goal
+        if active is None:
+            return
+        age = self.engine.elapsed_seconds - active.adopted_at_seconds
+        horizon = self.engine.policy.goal_reappraisal_seconds
+        # Nonpositive horizons permit immediate appraisal only, not persistence
+        # across elapsed logical time. The host owns authenticated time/evidence.
+        expired = age >= horizon if horizon > 0 else age > 0
+        if expired:
+            self._wants.pop(active.target, None)
+            self.engine._issued_wants = []
+            self.engine._pending_choice_ids.clear()
+            self.engine._emit("GOAL_SUSPENDED", active.target, reason="current_reappraisal_due")
+            self.engine._active_goal = None
+            self.engine._endogenous_turns = 0
+
     def advance(self, seconds: float) -> None:
         self.engine.advance(seconds)
+        self._expire_active_goal()
 
     def request_cognition(self):
+        self._expire_active_goal()
         if self.engine.active_goal is not None and self.engine.active_goal.target in self._latches:
             return None
         return self.engine.request_cognition()
@@ -339,6 +362,17 @@ class OperationalMotivation:
                 raise ValueError("want lacks admitted evidence or conflicts with protection")
             instance._wants[item.target] = item
         if engine.active_goal is not None:
+            active = engine.active_goal
+            # Revision 2+ is already bound to its last reappraisal receipt by
+            # VolitionEngine. Bind revision 1 to its original adoption time.
+            if active.revision == 1:
+                adoptions = [
+                    event for event in engine.events
+                    if event.kind == "GOAL_ADOPTED"
+                    and dict(event.details).get("goal_id") == active.goal_id
+                ]
+                if len(adoptions) != 1 or adoptions[0].at_seconds != active.adopted_at_seconds:
+                    raise ValueError("active goal adoption time disagrees with receipt")
             if engine.active_goal.target in instance._latches:
                 raise ValueError("protected active goal cannot be restored")
             active_want = instance._wants.get(engine.active_goal.target)
@@ -351,4 +385,5 @@ class OperationalMotivation:
                 rel_tol=1e-12, abs_tol=1e-12,
             ):
                 raise ValueError("active goal adoption score differs from persistent want")
+        instance._expire_active_goal()
         return instance
