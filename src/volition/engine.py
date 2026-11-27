@@ -587,6 +587,13 @@ class VolitionEngine:
         self._satiation[target] = _unit(self._satiation.get(target, 0.0) + amount)
         self._emit("SATISFACTION_RECORDED", target, amount=amount, admission="unverified_scalar")
 
+    def _active_goal_needs_reappraisal(self) -> bool:
+        if self._active_goal is None:
+            return False
+        age = self._elapsed_seconds - self._active_goal.adopted_at_seconds
+        horizon = self.policy.goal_reappraisal_seconds
+        return age >= horizon if horizon > 0 else age > 0
+
     def complete_goal(self, admitted: AdmittedGoalCompletion) -> bool:
         """Complete only the exact active goal revision backed by caller admission.
 
@@ -628,6 +635,8 @@ class VolitionEngine:
             or active.target != claim.target
         ):
             raise ValueError("goal completion does not match exact active goal")
+        if self._active_goal_needs_reappraisal():
+            raise ValueError("goal completion requires current reappraisal")
         self._issued_wants = []
         self._pending_choice_ids.clear()
         self._emit("GOAL_COMPLETED", active.target, **details)
@@ -659,7 +668,7 @@ class VolitionEngine:
             }
 
     def request_cognition(self) -> CognitionRequest | None:
-        if self._active_goal is None:
+        if self._active_goal is None or self._active_goal_needs_reappraisal():
             return None
         if self._endogenous_turns >= self.policy.endogenous_turn_budget:
             return None
