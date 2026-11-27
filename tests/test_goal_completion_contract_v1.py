@@ -318,3 +318,59 @@ def test_restore_rejects_completed_goal_event_claiming_foreign_goal_id():
     )
     with pytest.raises(ValueError, match="completion.*lineage"):
         VolitionEngine.from_snapshot(snapshot)
+
+
+@pytest.mark.parametrize("horizon,elapsed", [(2., 2.), (2., 3.), (0., .01), (-1., .01)])
+def test_direct_expired_goal_refuses_cognition_and_preserves_reappraisal(horizon, elapsed):
+    engine = VolitionEngine(Policy(goal_reappraisal_seconds=horizon))
+    goal = engine.tick([motive()])
+    engine.advance(elapsed)
+    engine = VolitionEngine.from_snapshot(engine.snapshot())
+    before = engine.snapshot()
+    assert engine.request_cognition() is None
+    assert engine.snapshot() == before
+    revised = engine.tick([motive()])
+    assert revised.goal_id == goal.goal_id and revised.choice_id == goal.choice_id
+    assert revised.revision == goal.revision + 1
+    assert engine.request_cognition().effect_authority is False
+
+
+@pytest.mark.parametrize("horizon,elapsed", [(2., 2.), (0., .01), (-1., .01)])
+def test_direct_expired_goal_refuses_completion_until_reappraised(horizon, elapsed):
+    engine = VolitionEngine(Policy(goal_reappraisal_seconds=horizon))
+    goal = engine.tick([motive()])
+    old = admit(claim(goal))
+    engine.advance(elapsed)
+    engine = VolitionEngine.from_snapshot(engine.snapshot())
+    before = engine.snapshot()
+    with pytest.raises(ValueError, match="reappraisal"):
+        engine.complete_goal(old)
+    assert engine.snapshot() == before
+    revised = engine.tick([motive()])
+    with pytest.raises(ValueError, match="active goal"):
+        engine.complete_goal(old)
+    assert engine.complete_goal(admit(claim(revised, outcome_event_id="outcome:revised")))
+    assert engine.active_goal is None
+    assert engine.request_cognition() is None
+
+
+def test_direct_fresh_completion_replay_does_not_change_stale_successor():
+    engine = VolitionEngine(Policy(goal_reappraisal_seconds=2.))
+    goal = engine.tick([motive()])
+    receipt = admit(claim(goal))
+    engine.advance(1.)
+    assert engine.complete_goal(receipt)
+    successor = engine.tick([motive()])
+    engine.advance(2.)
+    before = engine.snapshot()
+    assert engine.complete_goal(receipt) is False
+    assert engine.snapshot() == before
+    assert engine.active_goal == successor
+
+
+@pytest.mark.parametrize("horizon", [0., -1.])
+def test_direct_nonpositive_horizon_permits_immediate_appraisal(horizon):
+    engine = VolitionEngine(Policy(goal_reappraisal_seconds=horizon))
+    goal = engine.tick([motive()])
+    assert engine.request_cognition().goal_id == goal.goal_id
+    assert engine.complete_goal(admit(claim(goal)))
