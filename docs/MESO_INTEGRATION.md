@@ -23,7 +23,7 @@ The bridge consumes only MESO's downstream `IntentProposal` contract, which is c
 
 `APPROACH` -> one Volition `OPEN_LOOP` signal.
 
-`INSPECT` -> one Volition `EPISTEMIC` signal whose transformed value preserves MESO intent strength.
+`INSPECT` -> one Volition `EPISTEMIC` signal whose transformed value preserves MESO intent strength, except when the source is `exploration_requested`. That optional-inspection proposal generates no motive signal; it can be retained by a caller as advisory evidence. This distinction does not authenticate the source label or establish freshness. Legacy epistemic mapping is unchanged.
 
 `WITHDRAW` -> one Volition `PROTECTION` signal. Withdrawal is not encoded as negative pleasure.
 

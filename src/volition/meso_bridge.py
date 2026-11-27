@@ -95,7 +95,11 @@ class MesoIntentBridge:
     @staticmethod
     def to_signals(value: object) -> tuple[Signal, ...]:
         evidence = MesoIntentEvidence.from_value(value)
-        if evidence.kind == "hold":
+        if evidence.kind == "hold" or (
+            evidence.kind == "inspect" and evidence.source == "exploration_requested"
+        ):
+            # An optional inspection request carries no measured epistemic value.
+            # Retain its proposal at ingress, not as a new motive signal.
             return ()
 
         assert evidence.target_id is not None
